@@ -30,3 +30,31 @@ export const storage = {
     }
   }
 };
+
+export const session = {
+  get: (key) => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const item = window.sessionStorage.getItem(key);
+      return item ? JSON.parse(item) : null;
+    } catch (error) {
+      return null;
+    }
+  },
+  set: (key, value) => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error('Error writing to sessionStorage', error);
+    }
+  },
+  remove: (key) => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.sessionStorage.removeItem(key);
+    } catch (error) {
+      console.error('Error removing from sessionStorage', error);
+    }
+  }
+};

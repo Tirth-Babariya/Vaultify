@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { storage } from '@/lib/storage';
+import { storage, session } from '@/lib/storage';
+import { encryptData, decryptData } from '@/lib/crypto';
 import PasswordForm from '@/components/PasswordForm';
 import PasswordList from '@/components/PasswordList';
 import Generator from '@/components/Generator';
@@ -20,35 +21,67 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const masterHash = storage.get('master_hash');
-    const isLocked = storage.get('is_locked');
+    const initVault = async () => {
+      const masterHash = storage.get('master_hash');
+      const isLocked = storage.get('is_locked');
+      const vaultKey = session.get('vault_key');
 
-    if (!masterHash) {
-      router.push('/lock');
-    } else if (isLocked !== false) {
-      router.push('/lock');
-    } else {
+      if (!masterHash || isLocked !== false || !vaultKey) {
+        router.push('/lock');
+        return;
+      }
+
+      const encryptedVault = storage.get('passwords');
+      if (encryptedVault) {
+        try {
+          // If it's the old plain-text format (array), convert it to encrypted
+          if (Array.isArray(encryptedVault)) {
+            setPasswords(encryptedVault);
+            const cipherText = await encryptData(encryptedVault, vaultKey);
+            storage.set('passwords', cipherText);
+          } else {
+            const decrypted = await decryptData(encryptedVault, vaultKey);
+            setPasswords(decrypted);
+          }
+        } catch (error) {
+          console.error('Decryption failed', error);
+          router.push('/lock');
+        }
+      }
       setIsReady(true);
-      setPasswords(storage.get('passwords') || []);
-    }
+    };
+
+    initVault();
   }, [router]);
+
+  const saveVault = async (updatedPasswords) => {
+    const vaultKey = session.get('vault_key');
+    if (!vaultKey) return;
+    
+    try {
+      const cipherText = await encryptData(updatedPasswords, vaultKey);
+      storage.set('passwords', cipherText);
+      setPasswords(updatedPasswords);
+    } catch (error) {
+      showToast('Error securing vault.');
+    }
+  };
 
   const addPassword = (newEntry) => {
     const updated = [newEntry, ...passwords];
-    setPasswords(updated);
-    storage.set('passwords', updated);
-    showToast('Password saved successfully!');
+    saveVault(updated);
+    showToast('Password saved securely!');
   };
 
   const deletePassword = (id) => {
     const updated = passwords.filter(p => p.id !== id);
-    setPasswords(updated);
-    storage.set('passwords', updated);
+    saveVault(updated);
     showToast('Password deleted.');
   };
 
   const handleLock = () => {
     storage.set('is_locked', true);
+    session.remove('vault_key');
     router.push('/lock');
   };
 

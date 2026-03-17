@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { storage } from '@/lib/storage';
+import { storage, session } from '@/lib/storage';
 import { hashPassword } from '@/lib/crypto';
 
 export default function LockScreen() {
@@ -41,6 +41,7 @@ export default function LockScreen() {
         const hash = await hashPassword(password);
         storage.set('master_hash', hash);
         storage.set('is_locked', false);
+        session.set('vault_key', password);
         router.push('/');
       } else {
         const hash = await hashPassword(password);
@@ -48,6 +49,7 @@ export default function LockScreen() {
 
         if (hash === storedHash) {
           storage.set('is_locked', false);
+          session.set('vault_key', password);
           router.push('/');
         } else {
           setError('Incorrect master password.');
