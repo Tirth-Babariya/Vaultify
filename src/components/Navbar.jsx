@@ -1,13 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { storage } from '@/lib/storage';
+import { useRouter, usePathname } from 'next/navigation';
+import { storage, session } from '@/lib/storage';
 import Logo from './Logo';
 
 export default function Navbar() {
   const [isDark, setIsDark] = useState(true);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [navAnimation, setNavAnimation] = useState('');
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
+    // Theme sync
     const savedTheme = storage.get('theme');
     if (savedTheme === 'light') {
       setIsDark(false);
@@ -16,7 +22,30 @@ export default function Navbar() {
       setIsDark(true);
       document.documentElement.classList.add('dark');
     }
-  }, []);
+
+    // Lock status sync
+    const checkStatus = () => {
+      const unlocked = !!session.get('vault_key');
+      setIsUnlocked(unlocked);
+      if (unlocked) setNavAnimation('unlocked');
+      else setNavAnimation('');
+    };
+    checkStatus();
+    window.addEventListener('storage', checkStatus);
+    return () => window.removeEventListener('storage', checkStatus);
+  }, [pathname]);
+
+  const handleManualLock = () => {
+    if (!isUnlocked) return;
+    
+    setNavAnimation('locked');
+    setTimeout(() => {
+      storage.set('is_locked', true);
+      session.remove('vault_key');
+      setIsUnlocked(false);
+      router.push('/lock');
+    }, 400);
+  };
 
   const toggleTheme = () => {
     const newMode = !isDark;
@@ -33,10 +62,24 @@ export default function Navbar() {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
       <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2.5 text-lg md:text-xl font-bold tracking-tight">
-          <Logo size={24} className="text-foreground" />
-          <span>Vaultify</span>
-        </div>
+        <button 
+          onClick={handleManualLock}
+          disabled={!isUnlocked}
+          className="group flex items-center gap-2.5 text-lg md:text-xl font-bold tracking-tight cursor-pointer disabled:cursor-default outline-none"
+          title={isUnlocked ? "Click to lock vault" : "Vaultify"}
+        >
+          <div className="relative">
+            {isUnlocked && (
+              <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            )}
+            <Logo 
+              size={24} 
+              className="text-foreground transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110" 
+              animate={navAnimation}
+            />
+          </div>
+          <span className="transition-all duration-300 group-hover:tracking-wider">Vaultify</span>
+        </button>
         
         <button 
           onClick={toggleTheme}

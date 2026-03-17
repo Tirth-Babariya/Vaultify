@@ -24,9 +24,14 @@ export default function SecurityAudit({ passwords }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-end">
-        <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Vault Health</label>
-        <span className={`text-xl font-bold ${
+      <div className="flex justify-between items-start">
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-widest opacity-40 block">Vault Health</label>
+          <div className="inline-flex items-center px-2 py-0.5 rounded-full bg-foreground/5 border border-border/50 text-[9px] font-bold uppercase tracking-tight opacity-60">
+            {total} {total === 1 ? 'Entry' : 'Entries'}
+          </div>
+        </div>
+        <span className={`text-2xl font-bold tabular-nums ${
           healthScore > 80 ? 'text-green-500' : healthScore > 50 ? 'text-yellow-500' : 'text-red-500'
         }`}>
           {Math.round(healthScore)}%

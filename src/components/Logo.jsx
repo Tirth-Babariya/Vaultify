@@ -37,6 +37,15 @@ export default function Logo({ size = 24, className = "", animate = "" }) {
           animation: unlock-spring 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
 
+        @keyframes lock-spring {
+          0% { transform: translateY(-4px) rotate(20deg); }
+          40% { transform: translateY(1px) rotate(-5deg); }
+          100% { transform: translateY(0) rotate(0); }
+        }
+        .animate-lock-spring {
+          animation: lock-spring 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
         @keyframes pulse-success {
           0% { transform: scale(1); }
           50% { transform: scale(1.05); }
@@ -65,7 +74,8 @@ export default function Logo({ size = 24, className = "", animate = "" }) {
         strokeWidth="2" 
         strokeLinecap="round"
         className={`transition-all duration-500 origin-bottom ${
-          isUnlocked ? 'animate-unlock-spring' : ''
+          isUnlocked ? 'animate-unlock-spring' : 
+          animate === 'locked' ? 'animate-lock-spring' : ''
         }`}
         style={{
           transformOrigin: '16px 10px'
