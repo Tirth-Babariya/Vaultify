@@ -1,11 +1,17 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { storage } from '@/lib/storage';
 
 export default function Generator() {
   const [length, setLength] = useState(16);
   const [password, setPassword] = useState('');
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const prefs = storage.get('vault_settings');
+    if (prefs?.defaultLength) {
+      setLength(prefs.defaultLength);
+    }
+  }, []);
 
   const generatePassword = () => {
     const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";

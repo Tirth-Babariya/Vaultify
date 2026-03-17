@@ -9,12 +9,32 @@
   --background: #ffffff;
   --foreground: #000000;
   --border: #e5e5e5;
+  --accent: #10b981; /* Default Emerald */
+  --accent-foreground: #000000;
+  --accent-glow: rgba(16, 185, 129, 0.2);
 }
 
 .dark {
   --background: #000000;
   --foreground: #ffffff;
   --border: #262626;
+  --accent: #10b981; /* Default Emerald */
+  --accent-foreground: #000000;
+  --accent-glow: rgba(16, 185, 129, 0.2);
+}
+
+/* Accent Color Variations */
+[data-accent="blue"] {
+  --accent: #3b82f6;
+  --accent-glow: rgba(59, 130, 246, 0.2);
+}
+[data-accent="ruby"] {
+  --accent: #e11d48;
+  --accent-glow: rgba(225, 29, 72, 0.2);
+}
+[data-accent="emerald"] {
+  --accent: #10b981;
+  --accent-glow: rgba(16, 185, 129, 0.2);
 }
 
 body {
@@ -56,16 +76,20 @@ body {
 }
 
 .input:focus {
-  border-color: var(--foreground);
+  border-color: var(--accent);
 }
 
 .btn-primary {
-  background: var(--foreground);
-  color: var(--background);
+  background: var(--accent);
+  color: var(--accent-foreground);
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
-  font-weight: 500;
-  transition: opacity 0.2s;
+  font-weight: 600;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
 }
 
 .btn-primary:hover {
@@ -108,7 +132,7 @@ input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   margin-top: -5px; /* Centers thumb on the track */
-  background-color: var(--foreground);
+  background-color: var(--accent);
   height: 16px;
   width: 16px;
   border-radius: 50%;
@@ -119,7 +143,7 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-moz-range-thumb {
   border: none;
   border-radius: 50%;
-  background-color: var(--foreground);
+  background-color: var(--accent);
   height: 16px;
   width: 16px;
   border: 2px solid var(--background);

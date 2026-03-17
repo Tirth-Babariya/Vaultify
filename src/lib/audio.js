@@ -1,7 +1,4 @@
-/**
- * Centralized synthetic audio utility for mechanical-feel sound effects.
- * Uses the Web Audio API to generate sounds in real-time.
- */
+import { storage } from './storage';
 
 const getAudioCtx = () => {
   if (typeof window === 'undefined') return null;
@@ -10,6 +7,10 @@ const getAudioCtx = () => {
 
 export const playSound = (type) => {
   if (typeof window === 'undefined') return;
+  
+  // Check preferences
+  const prefs = storage.get('vault_settings') || {};
+  if (prefs.sounds === false) return;
   
   try {
     const ctx = getAudioCtx();
