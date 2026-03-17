@@ -21,6 +21,7 @@ export default function PasswordList({ passwords, onDelete }) {
         <PasswordCard 
           key={item.id} 
           item={item} 
+          isReused={passwords.some(p => p.id !== item.id && p.password === item.password)}
           onDelete={() => onDelete(item.id)} 
         />
       ))}

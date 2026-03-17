@@ -39,7 +39,7 @@ export default function Generator() {
           max="32" 
           value={length} 
           onChange={(e) => setLength(e.target.value)}
-          className="w-full h-1.5 bg-foreground/10 rounded-lg appearance-none cursor-pointer accent-foreground"
+          className="w-full h-4 appearance-none bg-transparent cursor-pointer"
         />
       </div>
 

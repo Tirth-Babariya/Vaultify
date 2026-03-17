@@ -13,6 +13,36 @@ export default function LockScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [animation, setAnimation] = useState('');
+
+  const playSound = (type) => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      if (type === 'unlock') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(400, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+      } else {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(100, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.05, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      }
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + (type === 'unlock' ? 0.1 : 0.2));
+    } catch (e) {
+      // Silent fail if audio context is blocked
+    }
+  };
 
   useEffect(() => {
     const existingHash = storage.get('master_hash');
@@ -24,6 +54,7 @@ export default function LockScreen() {
   const handleAction = async (e) => {
     e.preventDefault();
     setError('');
+    setAnimation('');
     setLoading(true);
 
     try {
@@ -31,11 +62,15 @@ export default function LockScreen() {
         if (password.length < 8) {
           setError('Master password must be at least 8 characters long.');
           setLoading(false);
+          setAnimation('shake');
+          playSound('error');
           return;
         }
         if (password !== confirmPassword) {
           setError('Passwords do not match.');
           setLoading(false);
+          setAnimation('shake');
+          playSound('error');
           return;
         }
 
@@ -43,7 +78,10 @@ export default function LockScreen() {
         storage.set('master_hash', hash);
         storage.set('is_locked', false);
         session.set('vault_key', password);
-        router.push('/');
+        session.set('last_unlocked', new Date().toISOString());
+        setAnimation('unlocked');
+        playSound('unlock');
+        setTimeout(() => router.push('/'), 600);
       } else {
         const hash = await hashPassword(password);
         const storedHash = storage.get('master_hash');
@@ -51,23 +89,32 @@ export default function LockScreen() {
         if (hash === storedHash) {
           storage.set('is_locked', false);
           session.set('vault_key', password);
-          router.push('/');
+          session.set('last_unlocked', new Date().toISOString());
+          setAnimation('unlocked');
+          playSound('unlock');
+          setTimeout(() => router.push('/'), 600);
         } else {
           setError('Incorrect master password.');
+          setAnimation('shake');
+          playSound('error');
         }
       }
     } catch (err) {
       setError('An error occurred. Please try again.');
+      setAnimation('shake');
+      playSound('error');
     } finally {
-      setLoading(false);
+      if (animation !== 'unlocked') setLoading(false);
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] md:min-h-[70vh] px-2">
-      <div className="card w-full max-w-sm md:max-w-md space-y-6 md:space-y-8 p-6 md:p-10">
+      <div className={`card w-full max-w-sm md:max-w-md space-y-6 md:space-y-8 p-6 md:p-10 transition-all duration-300 ${
+        animation === 'shake' ? 'animate-shake-real border-red-500/50' : ''
+      } ${animation === 'unlocked' ? 'scale-105 border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : ''}`}>
         <div className="flex justify-center">
-          <Logo size={48} className="text-foreground" />
+          <Logo size={48} className="text-foreground" animate={animation} />
         </div>
         <div className="text-center space-y-2 md:space-y-3">
           <h1 className="text-xl md:text-2xl font-bold">

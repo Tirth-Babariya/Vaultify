@@ -83,3 +83,53 @@ body {
 .btn-secondary:hover {
   background: rgba(128, 128, 128, 0.1);
 }
+
+/* Range Slider Custom Styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  background: var(--border);
+  height: 6px;
+  border-radius: 3px;
+}
+
+input[type="range"]::-moz-range-track {
+  background: var(--border);
+  height: 6px;
+  border-radius: 3px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -5px; /* Centers thumb on the track */
+  background-color: var(--foreground);
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--background);
+  transition: transform 0.1s ease;
+}
+
+input[type="range"]::-moz-range-thumb {
+  border: none;
+  border-radius: 50%;
+  background-color: var(--foreground);
+  height: 16px;
+  width: 16px;
+  border: 2px solid var(--background);
+  transition: transform 0.1s ease;
+}
+
+input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.2);
+}
+
+input[type="range"]:active::-moz-range-thumb {
+  transform: scale(1.2);
+}

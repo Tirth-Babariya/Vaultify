@@ -1,18 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { storage, session } from '@/lib/storage';
 import { encryptData, decryptData } from '@/lib/crypto';
 import PasswordForm from '@/components/PasswordForm';
 import PasswordList from '@/components/PasswordList';
 import Generator from '@/components/Generator';
+import SecurityAudit from '@/components/SecurityAudit';
 
 export default function Dashboard() {
   const router = useRouter();
+  const searchRef = useRef(null);
+  const formRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
   const [passwords, setPasswords] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [lastUnlocked, setLastUnlocked] = useState(null);
   const [toast, setToast] = useState(null);
 
   const showToast = (message) => {
@@ -25,16 +29,18 @@ export default function Dashboard() {
       const masterHash = storage.get('master_hash');
       const isLocked = storage.get('is_locked');
       const vaultKey = session.get('vault_key');
+      const unlockedTime = session.get('last_unlocked');
 
       if (!masterHash || isLocked !== false || !vaultKey) {
         router.push('/lock');
         return;
       }
 
+      setLastUnlocked(unlockedTime);
+
       const encryptedVault = storage.get('passwords');
       if (encryptedVault) {
         try {
-          // If it's the old plain-text format (array), convert it to encrypted
           if (Array.isArray(encryptedVault)) {
             setPasswords(encryptedVault);
             const cipherText = await encryptData(encryptedVault, vaultKey);
@@ -46,12 +52,46 @@ export default function Dashboard() {
         } catch (error) {
           console.error('Decryption failed', error);
           router.push('/lock');
+          return;
         }
       }
       setIsReady(true);
     };
 
     initVault();
+
+    // Auto-lock logic (10 minutes)
+    let timeout;
+    const resetTimer = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        handleLock();
+      }, 10 * 60 * 1000);
+    };
+
+    const handleShortcuts = (e) => {
+      if (document.activeElement.tagName === 'INPUT' && e.key !== 'Escape') return;
+
+      if (e.key === '/') {
+        e.preventDefault();
+        searchRef.current?.focus();
+      } else if (e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        formRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('mousemove', resetTimer);
+    window.addEventListener('keydown', resetTimer);
+    window.addEventListener('keydown', handleShortcuts);
+    resetTimer();
+
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('keydown', resetTimer);
+      window.removeEventListener('keydown', handleShortcuts);
+    };
   }, [router]);
 
   const saveVault = async (updatedPasswords) => {
@@ -77,6 +117,51 @@ export default function Dashboard() {
     const updated = passwords.filter(p => p.id !== id);
     saveVault(updated);
     showToast('Password deleted.');
+  };
+
+  const importData = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const content = event.target.result;
+        let imported = [];
+        
+        if (file.name.endsWith('.json')) {
+          const data = JSON.parse(content);
+          imported = Array.isArray(data) ? data : (data.passwords || []);
+        } else if (file.name.endsWith('.csv')) {
+          const rows = content.split('\n').filter(r => r.trim());
+          if (rows.length < 2) return;
+          const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+          imported = rows.slice(1).map(row => {
+            const values = row.split(',').map(v => v.trim());
+            const entry = {};
+            headers.forEach((h, i) => {
+              if (h.includes('site') || h.includes('url') || h.includes('name')) entry.site = values[i];
+              if (h.includes('user')) entry.username = values[i];
+              if (h.includes('pass')) entry.password = values[i];
+            });
+            entry.id = Date.now() + Math.round(Math.random() * 1000);
+            return entry;
+          }).filter(e => e.site && e.password);
+        }
+
+        if (imported.length > 0) {
+          const merged = [...imported, ...passwords];
+          await saveVault(merged);
+          showToast(`Imported ${imported.length} entries successfully!`);
+        } else {
+          showToast('No valid entries found in file.');
+        }
+      } catch (error) {
+        showToast('Import failed. Check file format.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const handleLock = () => {
@@ -107,10 +192,24 @@ export default function Dashboard() {
     <div className="space-y-8 md:space-y-12">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-center md:text-left">Your Vault</h1>
+          <div className="flex flex-col md:flex-row md:items-baseline md:gap-4">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-center md:text-left">Your Vault</h1>
+            {lastUnlocked && (
+              <span className="text-[10px] uppercase tracking-widest opacity-30 font-bold text-center md:text-left">
+                Last unlocked: {new Date(lastUnlocked).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </div>
           <p className="text-foreground/60 text-sm md:text-base text-center md:text-left">Manage your passwords securely in one place.</p>
         </div>
         <div className="flex justify-center md:justify-end space-x-2">
+          <label className="btn-secondary text-[11px] md:text-xs py-2 px-3 md:px-4 flex items-center gap-2 cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+            </svg>
+            <span className="hidden sm:inline">Import</span>
+            <input type="file" accept=".json,.csv" className="hidden" onChange={importData} />
+          </label>
           <button onClick={exportData} className="btn-secondary text-[11px] md:text-xs py-2 px-3 md:px-4 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -140,9 +239,15 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <aside className="space-y-6 lg:sticky lg:top-24 h-fit">
+          {passwords.length > 0 && (
+            <div className="card">
+              <SecurityAudit passwords={passwords} />
+            </div>
+          )}
+
           <div className="card">
-            <h2 className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-4">Add New entry</h2>
-            <PasswordForm onAdd={addPassword} />
+            <h2 className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-4">Add Entry</h2>
+            <PasswordForm onAdd={addPassword} inputRef={formRef} />
           </div>
           
           <div className="hidden lg:block card">
@@ -154,6 +259,7 @@ export default function Dashboard() {
         <section className="lg:col-span-2 space-y-6">
           <div className="relative">
             <input 
+              ref={searchRef}
               type="text" 
               placeholder="Search by site or username..." 
               className="input !pl-10 !py-3 md:!py-3.5"

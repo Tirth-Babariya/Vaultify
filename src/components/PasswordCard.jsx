@@ -2,9 +2,22 @@
 
 import { useState } from 'react';
 
-export default function PasswordCard({ item, onDelete }) {
+export default function PasswordCard({ item, onDelete, isReused }) {
   const [showPassword, setShowPassword] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const getStrength = (pass) => {
+    let score = 0;
+    if (!pass) return score;
+    if (pass.length >= 8) score++;
+    if (pass.length >= 12) score++;
+    if (/[A-Z]/.test(pass)) score++;
+    if (/[0-9]/.test(pass)) score++;
+    if (/[^A-Za-z0-9]/.test(pass)) score++;
+    return score;
+  };
+
+  const strength = getStrength(item.password);
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
@@ -35,7 +48,19 @@ export default function PasswordCard({ item, onDelete }) {
           )}
           <div className="space-y-0.5 md:space-y-1 min-w-0">
             <h3 className="font-bold text-base md:text-lg leading-tight truncate">{item.site}</h3>
-            <p className="text-[11px] md:text-sm text-foreground/50 truncate">{item.username || 'No username'}</p>
+            <div className="flex items-center gap-2 overflow-hidden">
+              <p className="text-[11px] md:text-sm text-foreground/50 truncate flex-shrink min-w-0">
+                {item.username || 'No username'}
+              </p>
+              <div className="flex gap-1 flex-shrink-0">
+                {strength <= 2 && (
+                  <span className="text-[8px] font-bold uppercase tracking-tighter bg-red-500/10 text-red-500 px-1 rounded-sm">Weak</span>
+                )}
+                {isReused && (
+                  <span className="text-[8px] font-bold uppercase tracking-tighter bg-yellow-500/10 text-yellow-500 px-1 rounded-sm">Reused</span>
+                )}
+              </div>
+            </div>
           </div>
         </div>
         <button 
