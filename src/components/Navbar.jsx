@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { storage } from '@/lib/storage';
+import Logo from './Logo';
 
 export default function Navbar() {
   const [isDark, setIsDark] = useState(true);
@@ -31,14 +32,15 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
-      <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="text-xl font-bold tracking-tight">
-          Vaultify <span className="text-lg">🔐</span>
+      <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-2.5 text-lg md:text-xl font-bold tracking-tight">
+          <Logo size={24} className="text-foreground" />
+          <span>Vaultify</span>
         </div>
         
         <button 
           onClick={toggleTheme}
-          className="p-2 rounded-full hover:bg-foreground/10 transition-colors"
+          className="p-2.5 rounded-full hover:bg-foreground/10 transition-colors"
           aria-label="Toggle Theme"
         >
           {isDark ? (

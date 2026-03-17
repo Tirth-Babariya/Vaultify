@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { storage, session } from '@/lib/storage';
 import { hashPassword } from '@/lib/crypto';
+import Logo from './Logo';
 
 export default function LockScreen() {
   const router = useRouter();
@@ -63,13 +64,16 @@ export default function LockScreen() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] max-w-md mx-auto">
-      <div className="card w-full space-y-6">
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">
+    <div className="flex flex-col items-center justify-center min-h-[60vh] md:min-h-[70vh] px-2">
+      <div className="card w-full max-w-sm md:max-w-md space-y-6 md:space-y-8 p-6 md:p-10">
+        <div className="flex justify-center">
+          <Logo size={48} className="text-foreground" />
+        </div>
+        <div className="text-center space-y-2 md:space-y-3">
+          <h1 className="text-xl md:text-2xl font-bold">
             {isNewUser ? 'Set Master Password' : 'Vault Locked'}
           </h1>
-          <p className="text-sm text-foreground/60">
+          <p className="text-xs md:text-sm text-foreground/60 leading-relaxed">
             {isNewUser 
               ? 'Create a strong master password to secure your vault.' 
               : 'Enter your master password to continue.'}

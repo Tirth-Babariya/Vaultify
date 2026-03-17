@@ -104,32 +104,33 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="space-y-12">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <div className="space-y-8 md:space-y-12">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">Your Vault</h1>
-          <p className="text-foreground/60">Manage your passwords securely in one place.</p>
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-center md:text-left">Your Vault</h1>
+          <p className="text-foreground/60 text-sm md:text-base text-center md:text-left">Manage your passwords securely in one place.</p>
         </div>
-        <div className="flex space-x-2">
-          <button onClick={exportData} className="btn-secondary text-xs py-2 px-4 flex items-center gap-2">
+        <div className="flex justify-center md:justify-end space-x-2">
+          <button onClick={exportData} className="btn-secondary text-[11px] md:text-xs py-2 px-3 md:px-4 flex items-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
             </svg>
-            Export
+            <span className="hidden sm:inline">Export</span>
           </button>
-          <button onClick={handleLock} className="btn-secondary text-xs py-2 px-4 flex items-center gap-2">
+          <button onClick={handleLock} className="btn-secondary text-[11px] md:text-xs py-2 px-3 md:px-4 flex items-center gap-2">
              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
             </svg>
-            Lock Vault
+            <span className="hidden sm:inline">Lock Vault</span>
+            <span className="sm:hidden">Lock</span>
           </button>
         </div>
       </header>
 
       {toast && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-foreground text-background px-6 py-3 rounded-full shadow-2xl text-sm font-medium flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-300 w-[90%] max-w-xs">
+          <div className="bg-foreground text-background px-4 py-2.5 rounded-xl shadow-2xl text-xs font-medium flex items-center justify-center gap-2 text-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 flex-shrink-0">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             {toast}
@@ -138,14 +139,14 @@ export default function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <aside className="space-y-8">
+        <aside className="space-y-6 lg:sticky lg:top-24 h-fit">
           <div className="card">
-            <h2 className="text-sm font-semibold uppercase tracking-wider opacity-50 mb-4">Add New</h2>
+            <h2 className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-4">Add New entry</h2>
             <PasswordForm onAdd={addPassword} />
           </div>
           
-          <div className="card">
-            <h2 className="text-sm font-semibold uppercase tracking-wider opacity-50 mb-4">Quick Generator</h2>
+          <div className="hidden lg:block card">
+            <h2 className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-4">Quick Generator</h2>
             <Generator />
           </div>
         </aside>
@@ -154,8 +155,8 @@ export default function Dashboard() {
           <div className="relative">
             <input 
               type="text" 
-              placeholder="Search passwords..." 
-              className="input !pl-10"
+              placeholder="Search by site or username..." 
+              className="input !pl-10 !py-3 md:!py-3.5"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -168,6 +169,11 @@ export default function Dashboard() {
             passwords={filteredPasswords} 
             onDelete={deletePassword} 
           />
+
+          <div className="lg:hidden mt-12 card">
+            <h2 className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-4">Quick Generator</h2>
+            <Generator />
+          </div>
         </section>
       </div>
     </div>
