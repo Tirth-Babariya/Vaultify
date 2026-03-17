@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { storage, session } from '@/lib/storage';
 import { encryptData, decryptData } from '@/lib/crypto';
+import { playSound } from '@/lib/audio';
 import PasswordForm from '@/components/PasswordForm';
 import PasswordList from '@/components/PasswordList';
 import Generator from '@/components/Generator';
@@ -165,6 +166,7 @@ export default function Dashboard() {
   };
 
   const handleLock = () => {
+    playSound('lock');
     storage.set('is_locked', true);
     session.remove('vault_key');
     router.push('/lock');

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { storage, session } from '@/lib/storage';
+import { playSound } from '@/lib/audio';
 import Logo from './Logo';
 
 export default function Navbar() {
@@ -39,6 +40,7 @@ export default function Navbar() {
     if (!isUnlocked) return;
     
     setNavAnimation('locked');
+    playSound('lock');
     setTimeout(() => {
       storage.set('is_locked', true);
       session.remove('vault_key');

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { storage, session } from '@/lib/storage';
 import { hashPassword } from '@/lib/crypto';
+import { playSound } from '@/lib/audio';
 import Logo from './Logo';
 
 export default function LockScreen() {
@@ -14,35 +15,6 @@ export default function LockScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [animation, setAnimation] = useState('');
-
-  const playSound = (type) => {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      if (type === 'unlock') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(400, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-      } else {
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(100, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.2);
-        gain.gain.setValueAtTime(0.05, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-      }
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + (type === 'unlock' ? 0.1 : 0.2));
-    } catch (e) {
-      // Silent fail if audio context is blocked
-    }
-  };
 
   useEffect(() => {
     const existingHash = storage.get('master_hash');
