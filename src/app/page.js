@@ -122,7 +122,7 @@ export default function Dashboard() {
             <input 
               type="text" 
               placeholder="Search passwords..." 
-              className="input pl-10"
+              className="input !pl-10"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
