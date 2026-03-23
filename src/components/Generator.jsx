@@ -45,18 +45,18 @@ export default function Generator() {
           max="32" 
           value={length} 
           onChange={(e) => setLength(e.target.value)}
-          className="w-full h-4 appearance-none bg-transparent cursor-pointer"
+          className="w-full h-8 appearance-none bg-transparent cursor-pointer"
         />
       </div>
 
       <div className="flex space-x-2">
-        <div className="flex-1 bg-foreground/5 rounded-md px-3 py-2 font-mono text-sm overflow-hidden text-ellipsis h-10 flex items-center">
+        <div className="flex-1 bg-foreground/5 rounded-md px-3 py-2 font-mono text-xs md:text-sm overflow-hidden text-ellipsis h-12 flex items-center">
           {password || <span className="opacity-30">Click generate...</span>}
         </div>
         <button 
           onClick={copyToClipboard}
           disabled={!password}
-          className={`p-2 rounded-md transition-all ${copied ? 'bg-green-500 text-white' : 'hover:bg-foreground/10 disabled:opacity-30'}`}
+          className={`p-3 rounded-md transition-all ${copied ? 'bg-green-500 text-white' : 'hover:bg-foreground/10 disabled:opacity-30'}`}
         >
           {copied ? (
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">

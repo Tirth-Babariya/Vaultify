@@ -63,7 +63,7 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
-      <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
         <button 
           onClick={handleManualLock}
           disabled={!isUnlocked}
@@ -75,12 +75,12 @@ export default function Navbar() {
               <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             )}
             <Logo 
-              size={24} 
+              size={22} 
               className="text-foreground transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110" 
               animate={navAnimation}
             />
           </div>
-          <span className="transition-all duration-300 group-hover:tracking-wider">Vaultify</span>
+          <span className="text-base md:text-xl transition-all duration-300 group-hover:tracking-wider">Vaultify</span>
         </button>
         
         <button 

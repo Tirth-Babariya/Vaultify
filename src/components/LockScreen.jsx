@@ -81,8 +81,8 @@ export default function LockScreen() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] md:min-h-[70vh] px-2">
-      <div className={`card w-full max-w-sm md:max-w-md space-y-6 md:space-y-8 p-6 md:p-10 transition-all duration-300 ${
+    <div className="flex flex-col items-center justify-center min-h-[70vh] md:min-h-[80vh] px-4 py-8">
+      <div className={`card w-full max-w-[340px] sm:max-w-sm md:max-w-md space-y-6 md:space-y-8 p-6 md:p-10 transition-all duration-300 ${
         animation === 'shake' ? 'animate-shake-real border-red-500/50' : ''
       } ${animation === 'unlocked' ? 'scale-105 border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.1)]' : ''}`}>
         <div className="flex justify-center">

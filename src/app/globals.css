@@ -52,8 +52,14 @@ body {
   background: var(--background);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1.25rem; /* Reduced from 1.5rem for mobile */
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+@media (min-width: 768px) {
+  .card {
+    padding: 1.5rem;
+  }
 }
 
 .card:hover {
@@ -67,12 +73,14 @@ body {
 .input {
   width: 100%;
   padding: 0.75rem 1rem;
+  height: 48px; /* Standardize height for touch targets */
   border-radius: 8px;
   border: 1px solid var(--border);
   background: transparent;
   color: inherit;
   outline: none;
   transition: border-color 0.2s;
+  font-size: 16px; /* Prevents auto-zoom on iOS */
 }
 
 .input:focus {
@@ -83,9 +91,13 @@ body {
   background: var(--accent);
   color: var(--accent-foreground);
   padding: 0.75rem 1.5rem;
+  min-height: 48px; /* Standardize height for touch targets */
   border-radius: 8px;
   font-weight: 600;
   transition: opacity 0.2s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-primary:active {
@@ -99,9 +111,13 @@ body {
 .btn-secondary {
   border: 1px solid var(--border);
   padding: 0.75rem 1.5rem;
+  min-height: 44px; /* Accessible touch target */
   border-radius: 8px;
   font-weight: 500;
   transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-secondary:hover {
@@ -131,23 +147,25 @@ input[type="range"]::-moz-range-track {
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  margin-top: -5px; /* Centers thumb on the track */
+  margin-top: -8px; /* Adjusted for larger thumb */
   background-color: var(--accent);
-  height: 16px;
-  width: 16px;
+  height: 22px; /* Increased for mobile touch */
+  width: 22px; /* Increased for mobile touch */
   border-radius: 50%;
-  border: 2px solid var(--background);
+  border: 3px solid var(--background);
   transition: transform 0.1s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 input[type="range"]::-moz-range-thumb {
   border: none;
   border-radius: 50%;
   background-color: var(--accent);
-  height: 16px;
-  width: 16px;
-  border: 2px solid var(--background);
+  height: 22px; /* Increased for mobile touch */
+  width: 22px; /* Increased for mobile touch */
+  border: 3px solid var(--background);
   transition: transform 0.1s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 input[type="range"]:active::-webkit-slider-thumb {
