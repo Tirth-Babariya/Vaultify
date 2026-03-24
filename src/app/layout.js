@@ -27,10 +27,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className={`${inter.className} antialiased selection:bg-foreground selection:text-background`}>
-        <Navbar />
-        <main className="min-h-screen pt-20 pb-10 px-4 max-w-5xl mx-auto">
-          {children}
-        </main>
+        {children}
       </body>
     </html>
   );

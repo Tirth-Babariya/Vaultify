@@ -39,11 +39,12 @@ export default function PasswordForm({ onAdd, inputRef }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1">
-        <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Website / App</label>
+        <label htmlFor="site" className="text-[10px] font-bold uppercase tracking-widest opacity-40">Website / App</label>
         <input 
+          id="site"
           ref={inputRef}
           type="text" 
-          className="input h-10 text-sm" 
+          className="input h-10 text-sm glass" 
           placeholder="GitHub, Netflix..."
           value={site}
           onChange={(e) => setSite(e.target.value)}
@@ -51,10 +52,11 @@ export default function PasswordForm({ onAdd, inputRef }) {
         />
       </div>
       <div className="space-y-1">
-        <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Username / Email</label>
+        <label htmlFor="username" className="text-[10px] font-bold uppercase tracking-widest opacity-40">Username / Email</label>
         <input 
+          id="username"
           type="text" 
-          className="input h-10 text-sm" 
+          className="input h-10 text-sm glass" 
           placeholder="john@example.com"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
@@ -62,16 +64,17 @@ export default function PasswordForm({ onAdd, inputRef }) {
       </div>
       <div className="space-y-1.5">
         <div className="flex justify-between items-center">
-          <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Password</label>
+          <label htmlFor="password" className="text-[10px] font-bold uppercase tracking-widest opacity-40">Password</label>
           <span className={`text-[9px] font-bold uppercase tracking-wider ${
             strength <= 2 ? 'text-red-500' : strength <= 4 ? 'text-yellow-500' : 'text-green-500'
           }`}>
-            {password ? (strength <= 2 ? 'Weak' : strength <= 4 ? 'Medium' : 'Strong') : ''}
+            {password ? (strength <= 2 ? 'Weak' : strength <= 4 ? 'Medium' : 'Strong') : 'Strength'}
           </span>
         </div>
         <input 
+          id="password"
           type="password" 
-          className="input h-10 text-sm" 
+          className="input h-10 text-sm glass" 
           placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
