@@ -14,6 +14,7 @@
   --accent-glow: rgba(16, 185, 129, 0.2);
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(0, 0, 0, 0.05);
+  --input-bg: rgba(0, 0, 0, 0.025);
   --sidebar-w: 260px;
 }
 
@@ -22,10 +23,11 @@
   --foreground: #ffffff;
   --border: #1a1a1a;
   --accent: #10b981;
-  --accent-foreground: #000000;
+  --accent-foreground: #ffffff;
   --accent-glow: rgba(16, 185, 129, 0.2);
   --glass-bg: rgba(10, 10, 10, 0.7);
   --glass-border: rgba(255, 255, 255, 0.05);
+  --input-bg: rgba(255, 255, 255, 0.035);
 }
 
 /* Accent Color Variations */
@@ -43,7 +45,11 @@
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(700px circle at 50% 0%, var(--accent-glow), transparent 70%),
+    var(--background);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
@@ -65,9 +71,9 @@ body {
 .card {
   background: var(--background);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 20px;
   padding: 1.25rem; /* Reduced from 1.5rem for mobile */
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 @media (min-width: 768px) {
@@ -77,28 +83,30 @@ body {
 }
 
 .card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.12);
 }
 
 .dark .card:hover {
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.5);
 }
 
 .input {
   width: 100%;
   padding: 0.75rem 1rem;
   height: 48px; /* Standardize height for touch targets */
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: transparent;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: var(--input-bg);
   color: inherit;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
   font-size: 16px; /* Prevents auto-zoom on iOS */
 }
 
 .input:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .btn-primary {
@@ -106,12 +114,14 @@ body {
   color: var(--accent-foreground);
   padding: 0.75rem 1.5rem;
   min-height: 48px; /* Standardize height for touch targets */
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: 600;
-  transition: opacity 0.2s, transform 0.1s;
+  letter-spacing: -0.01em;
+  transition: opacity 0.2s, transform 0.15s ease, box-shadow 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 10px 24px -8px var(--accent-glow);
 }
 
 .btn-primary:active {
@@ -119,16 +129,18 @@ body {
 }
 
 .btn-primary:hover {
-  opacity: 0.9;
+  opacity: 0.92;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px -8px var(--accent-glow);
 }
 
 .btn-secondary {
   border: 1px solid var(--border);
   padding: 0.75rem 1.5rem;
   min-height: 44px; /* Accessible touch target */
-  border-radius: 8px;
+  border-radius: 12px;
   font-weight: 500;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, transform 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -136,6 +148,19 @@ body {
 
 .btn-secondary:hover {
   background: rgba(128, 128, 128, 0.1);
+  transform: translateY(-1px);
+}
+
+.avatar-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 18px;
+  background-color: var(--accent);
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.28), rgba(0, 0, 0, 0.12));
+  box-shadow: 0 12px 28px -8px var(--accent-glow);
+  color: #ffffff;
 }
 
 /* Webapp Utilities */

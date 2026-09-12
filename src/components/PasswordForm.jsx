@@ -2,11 +2,44 @@
 
 import { useState, useRef } from 'react';
 import { playSound } from '@/lib/audio';
+import { SITE_SUGGESTIONS } from '@/lib/siteSuggestions';
+import GroupDropdown from './GroupDropdown';
 
-export default function PasswordForm({ onAdd, inputRef }) {
+export default function PasswordForm({ onAdd, inputRef, groups = [] }) {
   const [site, setSite] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [groupId, setGroupId] = useState(null);
+  const [showSiteSuggestions, setShowSiteSuggestions] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
+
+  const siteSuggestions = site.trim()
+    ? SITE_SUGGESTIONS.filter((s) => s.toLowerCase().includes(site.trim().toLowerCase()) && s.toLowerCase() !== site.trim().toLowerCase()).slice(0, 6)
+    : [];
+
+  const selectSuggestion = (suggestion) => {
+    setSite(suggestion);
+    setShowSiteSuggestions(false);
+    setActiveSuggestion(-1);
+  };
+
+  const handleSiteKeyDown = (e) => {
+    if (!showSiteSuggestions || siteSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveSuggestion((i) => (i + 1) % siteSuggestions.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveSuggestion((i) => (i <= 0 ? siteSuggestions.length - 1 : i - 1));
+    } else if (e.key === 'Enter' && activeSuggestion >= 0) {
+      e.preventDefault();
+      selectSuggestion(siteSuggestions[activeSuggestion]);
+    } else if (e.key === 'Escape') {
+      setShowSiteSuggestions(false);
+      setActiveSuggestion(-1);
+    }
+  };
 
   const fileInputRef = useRef(null);
   const [scanning, setScanning] = useState(false);
@@ -105,12 +138,14 @@ export default function PasswordForm({ onAdd, inputRef }) {
       id: Date.now(),
       site,
       username,
-      password
+      password,
+      groupId
     });
 
     setSite('');
     setUsername('');
     setPassword('');
+    setGroupId(null);
     setScanSuccess(false);
     setScanError('');
     setScanRawText('');
@@ -175,18 +210,44 @@ export default function PasswordForm({ onAdd, inputRef }) {
           </pre>
         )}
       </div>
-      <div className="space-y-1">
+      <div className="space-y-1 relative">
         <label htmlFor="site" className="text-[10px] font-bold uppercase tracking-widest opacity-40">Website / App</label>
-        <input 
+        <input
           id="site"
           ref={inputRef}
-          type="text" 
-          className="input h-10 text-sm glass" 
+          type="text"
+          className="input h-10 text-sm glass"
           placeholder="GitHub, Netflix..."
           value={site}
-          onChange={(e) => setSite(e.target.value)}
+          onChange={(e) => { setSite(e.target.value); setActiveSuggestion(-1); }}
+          onFocus={() => setShowSiteSuggestions(true)}
+          onBlur={() => setTimeout(() => setShowSiteSuggestions(false), 120)}
+          onKeyDown={handleSiteKeyDown}
+          autoComplete="off"
+          role="combobox"
+          aria-expanded={showSiteSuggestions && siteSuggestions.length > 0}
+          aria-controls="site-suggestions"
           required
         />
+        {showSiteSuggestions && siteSuggestions.length > 0 && (
+          <ul id="site-suggestions" className="absolute z-10 top-full mt-1 w-full overflow-hidden rounded-lg border border-border bg-[var(--background)] shadow-lg">
+            {siteSuggestions.map((suggestion, i) => (
+              <li key={suggestion}>
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => selectSuggestion(suggestion)}
+                  onMouseEnter={() => setActiveSuggestion(i)}
+                  className={`w-full px-3 py-2 text-left text-sm transition-colors ${
+                    i === activeSuggestion ? 'bg-[var(--accent)] text-white' : 'hover:bg-foreground/5'
+                  }`}
+                >
+                  {suggestion}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <div className="space-y-1">
         <label htmlFor="username" className="text-[10px] font-bold uppercase tracking-widest opacity-40">Username / Email</label>
@@ -247,6 +308,12 @@ export default function PasswordForm({ onAdd, inputRef }) {
           </div>
         )}
       </div>
+      {groups.length > 0 && (
+        <div className="space-y-1">
+          <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Group</label>
+          <GroupDropdown groups={groups} value={groupId} onChange={setGroupId} />
+        </div>
+      )}
       <button type="submit" className="btn-primary w-full text-sm py-2">
         Save Password
       </button>

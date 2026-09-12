@@ -12,6 +12,11 @@ export default function Sidebar({ activeView, setActiveView, onLock }) {
         <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
       </svg>
     )},
+    { id: 'groups', label: 'Groups', icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-19.5 0v6a2.25 2.25 0 002.25 2.25h15a2.25 2.25 0 002.25-2.25v-6m-19.5 0h19.5M6 6h12a2.25 2.25 0 012.25 2.25v.75H3.75v-.75A2.25 2.25 0 016 6z" />
+      </svg>
+    )},
     { id: 'generator', label: 'Generator', icon: (
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
         <path strokeLinecap="round" strokeLinejoin="round" d="M4.745 3A23.933 23.933 0 003 12c0 3.183.62 6.22 1.745 9M19.5 3c.967 2.78 1.5 5.817 1.5 9s-.533 6.22-1.5 9M8.25 8.885l1.444-.89a.75.75 0 011.105.402l2.402 7.206a.75.75 0 001.104.401l1.445-.889m-8.25.75l.213.09a1.687 1.687 0 002.062-.617l4.45-6.676a1.688 1.688 0 012.062-.618l.213.09" />
@@ -33,9 +38,11 @@ export default function Sidebar({ activeView, setActiveView, onLock }) {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-[var(--sidebar-w)] h-screen fixed left-0 top-0 border-r border-border bg-background/50 backdrop-blur-xl p-6 z-40">
+      <aside className="hidden lg:flex flex-col w-[var(--sidebar-w)] h-screen fixed left-0 top-0 border-r border-border bg-[var(--background)]/50 backdrop-blur-xl p-6 z-40">
         <div className="flex items-center gap-3 mb-12 px-2">
-          <Logo size={28} className="text-accent" />
+          <div className="avatar-badge w-9 h-9">
+            <Logo size={18} className="text-current" />
+          </div>
           <span className="text-xl font-bold tracking-tight">Vaultify</span>
         </div>
 

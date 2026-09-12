@@ -3,13 +3,14 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { storage, session } from '@/lib/storage';
-import { encryptData, decryptData } from '@/lib/crypto';
+import { encryptData, decryptData, hashPassword } from '@/lib/crypto';
 import { playSound } from '@/lib/audio';
 import PasswordForm from '@/components/PasswordForm';
 import PasswordList from '@/components/PasswordList';
 import Generator from '@/components/Generator';
 import SecurityAudit from '@/components/SecurityAudit';
 import Settings from '@/components/Settings';
+import Groups from '@/components/Groups';
 import Sidebar from '@/components/Sidebar';
 
 export default function Dashboard() {
@@ -18,10 +19,12 @@ export default function Dashboard() {
   const formRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
   const [passwords, setPasswords] = useState([]);
+  const [groups, setGroups] = useState([]);
+  const [unlockedGroupIds, setUnlockedGroupIds] = useState(() => new Set(session.get('unlocked_groups') || []));
   const [searchQuery, setSearchQuery] = useState('');
   const [lastUnlocked, setLastUnlocked] = useState(null);
   const [toast, setToast] = useState(null);
-  const [activeView, setActiveView] = useState('passwords'); // 'passwords', 'generator', 'security', 'settings'
+  const [activeView, setActiveView] = useState('passwords'); // 'passwords', 'groups', 'generator', 'security', 'settings'
 
   const showToast = (message) => {
     setToast(message);
@@ -59,6 +62,17 @@ export default function Dashboard() {
           return;
         }
       }
+
+      const encryptedGroups = storage.get('groups');
+      if (encryptedGroups) {
+        try {
+          const decrypted = await decryptData(encryptedGroups, vaultKey);
+          setGroups(decrypted);
+        } catch (error) {
+          console.error('Group decryption failed', error);
+        }
+      }
+
       setIsReady(true);
     };
 
@@ -123,6 +137,62 @@ export default function Dashboard() {
     showToast('Password deleted.');
   };
 
+  const changeEntryGroup = (id, groupId) => {
+    const updated = passwords.map(p => p.id === id ? { ...p, groupId } : p);
+    saveVault(updated);
+  };
+
+  const saveGroups = async (updatedGroups) => {
+    const vaultKey = session.get('vault_key');
+    if (!vaultKey) return;
+    try {
+      const cipherText = await encryptData(updatedGroups, vaultKey);
+      storage.set('groups', cipherText);
+      setGroups(updatedGroups);
+    } catch (error) {
+      showToast('Error saving group.');
+    }
+  };
+
+  const addGroup = async (name, passcode) => {
+    const passcodeHash = passcode ? await hashPassword(passcode) : null;
+    const newGroup = { id: Date.now(), name, passcodeHash };
+    await saveGroups([...groups, newGroup]);
+    showToast('Group created.');
+  };
+
+  const deleteGroup = (id) => {
+    saveGroups(groups.filter(g => g.id !== id));
+    // Entries in the deleted group fall back to Ungrouped rather than vanishing.
+    saveVault(passwords.map(p => p.groupId === id ? { ...p, groupId: null } : p));
+    setUnlockedGroupIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      session.set('unlocked_groups', [...next]);
+      return next;
+    });
+    showToast('Group deleted.');
+  };
+
+  const setGroupPasscode = async (id, passcode) => {
+    const passcodeHash = passcode ? await hashPassword(passcode) : null;
+    await saveGroups(groups.map(g => g.id === id ? { ...g, passcodeHash } : g));
+    showToast(passcode ? 'Passcode set for group.' : 'Passcode removed from group.');
+  };
+
+  const unlockGroup = async (id, passcode) => {
+    const group = groups.find(g => g.id === id);
+    if (!group?.passcodeHash) return true;
+    const hash = await hashPassword(passcode);
+    if (hash !== group.passcodeHash) return false;
+    setUnlockedGroupIds(prev => {
+      const next = new Set(prev).add(id);
+      session.set('unlocked_groups', [...next]);
+      return next;
+    });
+    return true;
+  };
+
   const importData = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -169,6 +239,7 @@ export default function Dashboard() {
     playSound('lock');
     storage.set('is_locked', true);
     session.remove('vault_key');
+    session.remove('unlocked_groups');
     router.push('/lock');
   };
 
@@ -220,7 +291,7 @@ export default function Dashboard() {
               <aside className="space-y-6">
                 <div className="card glass">
                   <h2 className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-4">Add New Entry</h2>
-                  <PasswordForm onAdd={addPassword} inputRef={formRef} />
+                  <PasswordForm onAdd={addPassword} inputRef={formRef} groups={groups} />
                 </div>
               </aside>
 
@@ -240,11 +311,33 @@ export default function Dashboard() {
                   </svg>
                 </div>
 
-                <PasswordList 
-                  passwords={filteredPasswords.length > 0 || searchQuery ? filteredPasswords : passwords} 
-                  onDelete={deletePassword} 
+                <PasswordList
+                  passwords={filteredPasswords.length > 0 || searchQuery ? filteredPasswords : passwords}
+                  onDelete={deletePassword}
+                  groups={groups}
+                  unlockedGroupIds={unlockedGroupIds}
+                  onUnlockGroup={unlockGroup}
+                  onChangeGroup={changeEntryGroup}
                 />
               </div>
+            </div>
+          </div>
+        );
+      case 'groups':
+        return (
+          <div className="page-transition max-w-3xl mx-auto space-y-8">
+            <div className="space-y-1">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Groups</h1>
+              <p className="text-foreground/50 text-sm">Organize entries into groups, with an optional passcode on each.</p>
+            </div>
+            <div className="card glass p-8">
+              <Groups
+                groups={groups}
+                passwords={passwords}
+                onAdd={addGroup}
+                onDelete={deleteGroup}
+                onSetPasscode={setGroupPasscode}
+              />
             </div>
           </div>
         );
@@ -290,14 +383,14 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="app-grid bg-background">
+    <div className="app-grid bg-[var(--background)]">
       <Sidebar 
         activeView={activeView} 
         setActiveView={setActiveView} 
         onLock={handleLock}
       />
 
-      <main className="min-h-screen pt-4 pb-24 lg:pb-12 px-4 lg:px-12 lg:ml-[var(--sidebar-w)] overflow-x-hidden">
+      <main className="min-h-screen pt-4 pb-32 lg:pb-12 px-4 lg:px-12 lg:ml-[var(--sidebar-w)] overflow-x-hidden">
         <div className="max-w-6xl mx-auto mt-4 lg:mt-10">
           {renderView()}
         </div>
@@ -305,8 +398,8 @@ export default function Dashboard() {
 
       {toast && (
         <div className="fixed bottom-20 lg:bottom-10 left-1/2 -translate-x-1/2 z-[60] animate-in fade-in slide-in-from-bottom-4 duration-300 w-[90%] max-w-xs">
-          <div className="bg-foreground text-background px-4 py-3 rounded-2xl shadow-2xl text-xs font-semibold flex items-center justify-center gap-2 text-center border border-white/10">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-accent">
+          <div className="bg-[var(--foreground)] text-[var(--background)] px-4 py-3 rounded-2xl shadow-2xl text-xs font-semibold flex items-center justify-center gap-2 text-center border border-white/10">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 text-[var(--accent)]">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             {toast}

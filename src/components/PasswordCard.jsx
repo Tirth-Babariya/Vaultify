@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { SITE_DOMAINS } from '@/lib/siteSuggestions';
+import Logo from './Logo';
+import GroupDropdown from './GroupDropdown';
 
-export default function PasswordCard({ item, onDelete, isReused }) {
+export default function PasswordCard({ item, onDelete, isReused, groups = [], onChangeGroup }) {
   const [showPassword, setShowPassword] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -27,23 +30,35 @@ export default function PasswordCard({ item, onDelete, isReused }) {
 
   const [imgError, setImgError] = useState(false);
 
-  const getFavicon = (site) => {
-    const domain = site.includes('.') ? site : `${site.toLowerCase().replace(/\s+/g, '')}.com`;
-    return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
-  };
+  // Only attempt a favicon fetch when we have real confidence a domain
+  // exists — a raw domain the user typed, or a known service from our
+  // suggestions list. Guessing "<name>.com" for arbitrary free text (e.g. an
+  // entry named "Office Wifi") just surfaces Google's generic globe icon for
+  // domains that don't really exist, which looks broken. Anything else
+  // falls back to the app's own logo.
+  const site = item.site.trim();
+  const domain = site.includes('.')
+    ? site.replace(/^https?:\/\//i, '').replace(/\/.*$/, '')
+    : SITE_DOMAINS[site.toLowerCase()];
+
+  const getFavicon = (domain) => `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
 
   return (
     <div className="card group relative p-4 md:p-5">
       <div className="flex justify-between items-start mb-4 gap-2">
         <div className="flex items-center gap-2 md:gap-3 min-w-0">
-          {!imgError && (
+          {domain && !imgError ? (
             <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg overflow-hidden bg-foreground/5 flex-shrink-0 flex items-center justify-center border border-border">
-              <img 
-                src={getFavicon(item.site)} 
-                alt="" 
+              <img
+                src={getFavicon(domain)}
+                alt=""
                 className="w-5 h-5 md:w-6 md:h-6 object-contain"
                 onError={() => setImgError(true)}
               />
+            </div>
+          ) : (
+            <div className="avatar-badge w-8 h-8 md:w-10 md:h-10 rounded-lg flex-shrink-0">
+              <Logo size={16} className="text-current" />
             </div>
           )}
           <div className="space-y-0.5 md:space-y-1 min-w-0">
@@ -73,6 +88,18 @@ export default function PasswordCard({ item, onDelete, isReused }) {
           </svg>
         </button>
       </div>
+
+      {groups.length > 0 && (
+        <div className="mb-3">
+          <GroupDropdown
+            groups={groups}
+            value={item.groupId}
+            onChange={(id) => onChangeGroup(item.id, id)}
+            noneLabel="Ungrouped"
+            variant="pill"
+          />
+        </div>
+      )}
 
       <div className="flex items-center space-x-2">
         <div className="flex-1 bg-foreground/5 rounded-md px-3 py-2 font-mono text-[13px] md:text-sm overflow-hidden text-ellipsis whitespace-nowrap h-10 flex items-center">

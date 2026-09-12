@@ -26,7 +26,7 @@ export default function RootLayout({ children }) {
           }}
         />
       </head>
-      <body className={`${inter.className} antialiased selection:bg-foreground selection:text-background`}>
+      <body className={`${inter.className} antialiased selection:bg-[var(--foreground)] selection:text-[var(--background)]`}>
         {children}
       </body>
     </html>
