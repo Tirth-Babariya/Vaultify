@@ -87,13 +87,14 @@ export default function Settings() {
             <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Vault Auto-Lock</label>
             <span className="text-xs font-bold font-mono opacity-60">{lockTimer}m</span>
           </div>
-          <input 
+          <input
             type="range"
             min="1"
             max="60"
             value={lockTimer}
             onChange={(e) => updateSetting('lockTimer', Number(e.target.value))}
             className="w-full"
+            style={{ background: `linear-gradient(to right, var(--accent) ${((lockTimer - 1) / (60 - 1)) * 100}%, var(--border) ${((lockTimer - 1) / (60 - 1)) * 100}%)` }}
           />
         </div>
 
@@ -102,13 +103,14 @@ export default function Settings() {
             <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Default Password Length</label>
             <span className="text-xs font-bold font-mono opacity-60">{defaultLength}</span>
           </div>
-          <input 
+          <input
             type="range"
             min="8"
             max="32"
             value={defaultLength}
             onChange={(e) => updateSetting('defaultLength', Number(e.target.value))}
             className="w-full"
+            style={{ background: `linear-gradient(to right, var(--accent) ${((defaultLength - 8) / (32 - 8)) * 100}%, var(--border) ${((defaultLength - 8) / (32 - 8)) * 100}%)` }}
           />
         </div>
       </section>

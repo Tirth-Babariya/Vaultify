@@ -297,7 +297,7 @@ export default function Dashboard() {
         onLock={handleLock}
       />
 
-      <main className="min-h-screen pt-4 pb-24 lg:pb-12 px-4 lg:px-12 overflow-x-hidden">
+      <main className="min-h-screen pt-4 pb-24 lg:pb-12 px-4 lg:px-12 lg:ml-[var(--sidebar-w)] overflow-x-hidden">
         <div className="max-w-6xl mx-auto mt-4 lg:mt-10">
           {renderView()}
         </div>

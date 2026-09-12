@@ -53,6 +53,15 @@ body {
   border-color: var(--border);
 }
 
+/*
+ * Tailwind v4 puts utilities (including responsive variants like lg:hidden)
+ * inside `@layer utilities`. Un-layered CSS always outranks layered CSS
+ * regardless of source order or specificity, so any custom class below that
+ * shares an element with a Tailwind utility must live in `@layer components`
+ * or that utility can never win (this bit us with .bottom-nav vs lg:hidden).
+ */
+@layer components {
+
 .card {
   background: var(--background);
   border: 1px solid var(--border);
@@ -143,12 +152,6 @@ body {
   min-height: 100vh;
 }
 
-@media (min-width: 1024px) {
-  .app-grid {
-    grid-template-columns: var(--sidebar-w) 1fr;
-  }
-}
-
 .page-transition {
   animation: fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -187,13 +190,40 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 64px;
   display: flex;
   justify-content: space-around;
-  align-items: center;
-  padding: 0 12px;
+  align-items: stretch;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
   z-index: 50;
   border-top: 1px solid var(--border);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.dark .bottom-nav {
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 4px;
+  margin: 0 2px;
+  border-radius: 12px;
+  color: var(--foreground);
+  opacity: 0.45;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bottom-nav-item.active {
+  opacity: 1;
+  color: var(--accent);
+  background: var(--accent-glow);
+}
+
 }
 
 /* Custom Scrollbar */
@@ -210,6 +240,37 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--foreground);
   opacity: 0.2;
+}
+
+/*
+ * Base track for every range input in the app. The colored "fill" portion
+ * up to the thumb is drawn by each slider's own inline `background`
+ * (a linear-gradient computed from its value) — this rule only supplies the
+ * neutral rail underneath so unfilled track color stays theme-aware instead
+ * of falling back to the browser's native (often stark white) track.
+ */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: transparent;
 }
 
 input[type="range"]::-webkit-slider-thumb {

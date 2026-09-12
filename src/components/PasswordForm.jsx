@@ -1,11 +1,88 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { playSound } from '@/lib/audio';
 
 export default function PasswordForm({ onAdd, inputRef }) {
   const [site, setSite] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  const fileInputRef = useRef(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanError, setScanError] = useState('');
+  const [scanSuccess, setScanSuccess] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [scanRawText, setScanRawText] = useState('');
+  const [showRawText, setShowRawText] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const processImage = async (file) => {
+    if (!file || !file.type.startsWith('image/')) {
+      setScanError('Please provide an image file.');
+      return;
+    }
+
+    setScanError('');
+    setScanSuccess(false);
+    setScanRawText('');
+    setShowRawText(false);
+    setScanning(true);
+    setScanProgress(0);
+
+    try {
+      const { extractCredentialsFromImage } = await import('@/lib/ocr');
+      const result = await extractCredentialsFromImage(file, setScanProgress);
+      setScanRawText(result.rawText?.trim() || '');
+
+      let found = false;
+      if (result.username) { setUsername(result.username); found = true; }
+      if (result.password) { setPassword(result.password); found = true; }
+      if (result.site) { setSite((prev) => prev || result.site); }
+
+      if (found) {
+        setScanSuccess(true);
+        playSound('unlock');
+      } else {
+        setScanError('Could not confidently find a username/password. Check the scanned text below, or enter them manually.');
+        playSound('error');
+      }
+    } catch (err) {
+      setScanError('Failed to scan image. Please try again or enter manually.');
+      playSound('error');
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) processImage(file);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) processImage(file);
+  };
+
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          processImage(file);
+        }
+        break;
+      }
+    }
+  };
 
   const getStrength = (pass) => {
     let score = 0;
@@ -34,10 +111,70 @@ export default function PasswordForm({ onAdd, inputRef }) {
     setSite('');
     setUsername('');
     setPassword('');
+    setScanSuccess(false);
+    setScanError('');
+    setScanRawText('');
+    setShowRawText(false);
+    setShowPassword(false);
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} onPaste={handlePaste} className="space-y-4">
+      <div
+        onDrop={handleDrop}
+        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
+        className={`flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-4 text-center transition-colors glass ${
+          isDragging ? 'border-[var(--accent)]' : ''
+        }`}
+      >
+        {scanning ? (
+          <>
+            <svg className="h-5 w-5 animate-spin opacity-60" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
+            </svg>
+            <p className="text-xs opacity-60">Scanning screenshot… {scanProgress}%</p>
+          </>
+        ) : (
+          <>
+            <svg className="h-5 w-5 opacity-40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <p className="text-xs opacity-60">Paste (Ctrl+V) or drop a screenshot to auto-fill</p>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="btn-secondary text-xs py-1.5 px-3"
+            >
+              Upload Image
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          </>
+        )}
+        {scanError && <p className="text-[11px] text-red-500">{scanError}</p>}
+        {scanSuccess && <p className="text-[11px] text-green-500">Auto-filled from screenshot — please verify before saving</p>}
+        {scanRawText && (
+          <button
+            type="button"
+            onClick={() => setShowRawText((v) => !v)}
+            className="text-[10px] font-bold uppercase tracking-widest opacity-40 hover:opacity-70 underline"
+          >
+            {showRawText ? 'Hide' : 'Show'} scanned text
+          </button>
+        )}
+        {showRawText && (
+          <pre className="w-full max-h-28 overflow-auto rounded-md bg-black/20 p-2 text-left text-[11px] whitespace-pre-wrap select-text">
+            {scanRawText}
+          </pre>
+        )}
+      </div>
       <div className="space-y-1">
         <label htmlFor="site" className="text-[10px] font-bold uppercase tracking-widest opacity-40">Website / App</label>
         <input 
@@ -71,15 +208,34 @@ export default function PasswordForm({ onAdd, inputRef }) {
             {password ? (strength <= 2 ? 'Weak' : strength <= 4 ? 'Medium' : 'Strong') : 'Strength'}
           </span>
         </div>
-        <input 
-          id="password"
-          type="password" 
-          className="input h-10 text-sm glass" 
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <div className="relative">
+          <input
+            id="password"
+            type={showPassword ? 'text' : 'password'}
+            className="input h-10 text-sm glass !pr-10"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute right-1 top-1/2 -translate-y-1/2 p-2 hover:bg-foreground/10 rounded-md transition-colors"
+            title={showPassword ? 'Hide' : 'Show'}
+          >
+            {showPassword ? (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 opacity-60">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 opacity-60">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            )}
+          </button>
+        </div>
         {password && (
           <div className="h-1 w-full bg-foreground/5 rounded-full overflow-hidden">
             <div 

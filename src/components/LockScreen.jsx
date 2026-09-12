@@ -15,6 +15,7 @@ export default function LockScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [animation, setAnimation] = useState('');
+  const [confirmingReset, setConfirmingReset] = useState(false);
 
   useEffect(() => {
     const existingHash = storage.get('master_hash');
@@ -22,6 +23,20 @@ export default function LockScreen() {
       setIsNewUser(true);
     }
   }, []);
+
+  const handleResetVault = () => {
+    storage.remove('master_hash');
+    storage.remove('passwords');
+    storage.remove('is_locked');
+    session.remove('vault_key');
+    session.remove('last_unlocked');
+    playSound('lock');
+    setConfirmingReset(false);
+    setPassword('');
+    setConfirmPassword('');
+    setError('');
+    setIsNewUser(true);
+  };
 
   const handleAction = async (e) => {
     e.preventDefault();
@@ -144,10 +159,43 @@ export default function LockScreen() {
           </button>
         </form>
 
-        {!isNewUser && (
-          <p className="text-center text-xs text-foreground/40 pt-4">
-            Forgotten password? Data recovery is not possible.
-          </p>
+        {!isNewUser && !confirmingReset && (
+          <div className="text-center pt-4 space-y-1.5">
+            <p className="text-xs text-foreground/40">
+              Forgotten password? Data recovery is not possible.
+            </p>
+            <button
+              type="button"
+              onClick={() => setConfirmingReset(true)}
+              className="text-xs font-medium text-red-500/70 hover:text-red-500 underline underline-offset-2"
+            >
+              Reset Vault
+            </button>
+          </div>
+        )}
+
+        {confirmingReset && (
+          <div className="pt-4 border-t border-border space-y-3">
+            <p className="text-xs text-red-500 font-medium leading-relaxed text-center">
+              This will permanently delete every saved password on this device. This cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmingReset(false)}
+                className="btn-secondary flex-1 text-xs py-2"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleResetVault}
+                className="flex-1 text-xs py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors"
+              >
+                Yes, Delete Everything
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

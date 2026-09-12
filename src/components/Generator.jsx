@@ -39,13 +39,14 @@ export default function Generator() {
         <div className="flex justify-between items-center">
           <label className="text-[10px] font-bold uppercase tracking-widest opacity-40">Length: {length}</label>
         </div>
-        <input 
-          type="range" 
-          min="8" 
-          max="32" 
-          value={length} 
-          onChange={(e) => setLength(e.target.value)}
-          className="w-full h-8 appearance-none bg-transparent cursor-pointer"
+        <input
+          type="range"
+          min="8"
+          max="32"
+          value={length}
+          onChange={(e) => setLength(Number(e.target.value))}
+          className="w-full"
+          style={{ background: `linear-gradient(to right, var(--accent) ${((length - 8) / (32 - 8)) * 100}%, var(--border) ${((length - 8) / (32 - 8)) * 100}%)` }}
         />
       </div>
 

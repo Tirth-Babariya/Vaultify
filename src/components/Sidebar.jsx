@@ -72,7 +72,8 @@ export default function Sidebar({ activeView, setActiveView, onLock }) {
           <button
             key={view.id}
             onClick={() => setActiveView(view.id)}
-            className={`flex flex-col items-center gap-1 p-2 transition-all ${activeView === view.id ? 'text-accent scale-110' : 'opacity-40'}`}
+            aria-current={activeView === view.id ? 'page' : undefined}
+            className={`bottom-nav-item ${activeView === view.id ? 'active' : ''}`}
           >
             {view.icon}
             <span className="text-[10px] font-bold uppercase tracking-wider">{view.label}</span>
