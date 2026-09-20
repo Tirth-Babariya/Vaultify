@@ -19,6 +19,7 @@ import Sidebar from '@/components/Sidebar';
 import GitHubLink from '@/components/GitHubLink';
 import ThemeToggle from '@/components/ThemeToggle';
 import PasswordPrompt from '@/components/PasswordPrompt';
+import EditEntryModal from '@/components/EditEntryModal';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -32,13 +33,17 @@ export default function Dashboard() {
   const [activeView, setActiveView] = useState('passwords'); // 'passwords', 'groups', 'generator', 'security', 'settings'
   const [prompt, setPrompt] = useState(null); // { type: 'export' } | { type: 'import', content }
   const [exportFormat, setExportFormat] = useState('encrypted');
+  const [editingId, setEditingId] = useState(null);
 
   const passwords = vault.entries;
   const groups = vault.groups;
 
+  // One timer at a time: an older toast's timeout must not dismiss a newer message early.
+  const toastTimer = useRef(null);
   const showToast = (message) => {
     setToast(message);
-    setTimeout(() => setToast(null), 3000);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 3000);
   };
 
   useEffect(() => {
@@ -104,6 +109,12 @@ export default function Dashboard() {
       tombstones: { ...v.tombstones, [`e:${id}`]: Date.now() },
     }));
     showToast('Password deleted.');
+  };
+
+  const updateEntry = (id, changes) => {
+    mutate((v) => ({ ...v, entries: v.entries.map((p) => (p.id === id ? { ...p, ...changes, updatedAt: Date.now() } : p)) }));
+    setEditingId(null);
+    showToast('Entry updated.');
   };
 
   const changeEntryGroup = (id, groupId) => {
@@ -314,6 +325,7 @@ export default function Dashboard() {
                 <PasswordList
                   passwords={filteredPasswords.length > 0 || searchQuery ? filteredPasswords : passwords}
                   onDelete={deletePassword}
+                  onEdit={setEditingId}
                   groups={groups}
                   unlockedGroupIds={unlockedGroupIds}
                   onUnlockGroup={unlockGroup}
@@ -397,6 +409,16 @@ export default function Dashboard() {
           {renderView()}
         </div>
       </main>
+
+      {editingId && passwords.some((p) => p.id === editingId) && (
+        <EditEntryModal
+          key={editingId}
+          entry={passwords.find((p) => p.id === editingId)}
+          groups={groups}
+          onSave={updateEntry}
+          onClose={() => setEditingId(null)}
+        />
+      )}
 
       {prompt?.type === 'export' && (
         <PasswordPrompt

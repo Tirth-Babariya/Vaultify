@@ -43,7 +43,7 @@ function LockedGroup({ group, count, onUnlock }) {
   );
 }
 
-export default function PasswordList({ passwords, onDelete, groups = [], unlockedGroupIds = new Set(), onUnlockGroup, onChangeGroup }) {
+export default function PasswordList({ passwords, onDelete, onEdit, groups = [], unlockedGroupIds = new Set(), onUnlockGroup, onChangeGroup }) {
   if (passwords.length === 0) {
     return (
       <div className="space-y-4" role="region" aria-label="Password List">
@@ -68,6 +68,7 @@ export default function PasswordList({ passwords, onDelete, groups = [], unlocke
           item={item}
           isReused={passwords.some(p => p.id !== item.id && p.password === item.password)}
           onDelete={() => onDelete(item.id)}
+          onEdit={() => onEdit(item.id)}
           groups={groups}
           onChangeGroup={onChangeGroup}
         />

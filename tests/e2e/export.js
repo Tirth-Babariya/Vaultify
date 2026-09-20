@@ -84,6 +84,19 @@ const check = (name, cond, extra = '') => {
   await page.waitForSelector('text=Imported 1 entries');
   check('encrypted backup imports with its password', (await page.locator('h3:has-text("GitHub")').count()) === 2);
 
+  // Editing an existing entry
+  await page.locator('h3:has-text("GitHub")').first().locator('xpath=ancestor::div[contains(@class,"card")]').getByLabel('Edit entry').click();
+  await page.waitForSelector('text=Edit entry');
+  check('edit form is pre-filled', (await page.inputValue('#edit-username')) === 'octo' && (await page.inputValue('#edit-site')) === 'GitHub');
+  await page.fill('#edit-username', 'octocat@example.com');
+  await page.fill('#edit-password', 'new-Secret-Pass#77');
+  await page.click('button:has-text("Save changes")');
+  await page.waitForSelector('text=Entry updated');
+  check('edited username is shown on the card', (await page.locator('text=octocat@example.com').count()) === 1);
+  await page.waitForTimeout(500);
+  const at = await page.evaluate(() => JSON.parse(localStorage.getItem('vault_data')));
+  check('edited data is still stored encrypted', at.startsWith('v2:') && !at.includes('octocat'));
+
   check('no page errors', errors.length === 0, errors.join(' | '));
   await browser.close();
   console.log(failures ? `\n${failures} check(s) FAILED` : '\nAll checks passed');
