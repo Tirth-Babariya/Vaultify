@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { playSound } from '@/lib/audio';
 import { SITE_SUGGESTIONS } from '@/lib/siteSuggestions';
 import GroupDropdown from './GroupDropdown';
+import { newId } from '@/lib/vaultData';
 
 export default function PasswordForm({ onAdd, inputRef, groups = [] }) {
   const [site, setSite] = useState('');
@@ -135,7 +136,7 @@ export default function PasswordForm({ onAdd, inputRef, groups = [] }) {
     if (!site || !password) return;
 
     onAdd({
-      id: Date.now(),
+      id: newId(),
       site,
       username,
       password,
@@ -205,7 +206,7 @@ export default function PasswordForm({ onAdd, inputRef, groups = [] }) {
           </button>
         )}
         {showRawText && (
-          <pre className="w-full max-h-28 overflow-auto rounded-md bg-black/20 p-2 text-left text-[11px] whitespace-pre-wrap select-text">
+          <pre className="w-full max-h-28 overflow-auto rounded-md bg-foreground/[0.06] p-2 text-left text-[11px] whitespace-pre-wrap select-text">
             {scanRawText}
           </pre>
         )}

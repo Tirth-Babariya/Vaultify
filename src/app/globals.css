@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Animatable hue for the "RGB Auto" accent (numbers can be interpolated once registered). */
+@property --rgb-hue {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 150;
+}
+
 @theme {
   --color-brand-black: #000000;
   --color-brand-white: #ffffff;
@@ -10,11 +17,15 @@
   --foreground: #000000;
   --border: #e5e5e5;
   --accent: #10b981;
+  --accent-2: var(--accent);
+  --accent-gradient: linear-gradient(135deg, var(--accent), var(--accent-2));
+  --accent-2-glow: transparent;
   --accent-foreground: #ffffff;
   --accent-glow: rgba(16, 185, 129, 0.2);
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(0, 0, 0, 0.05);
   --input-bg: rgba(0, 0, 0, 0.025);
+  --input-border: var(--border);
   --sidebar-w: 260px;
 }
 
@@ -28,6 +39,7 @@
   --glass-bg: rgba(10, 10, 10, 0.7);
   --glass-border: rgba(255, 255, 255, 0.05);
   --input-bg: rgba(255, 255, 255, 0.035);
+  --input-border: transparent;
 }
 
 /* Accent Color Variations */
@@ -44,9 +56,35 @@
   --accent-glow: rgba(16, 185, 129, 0.2);
 }
 
+/*
+ * RGB Auto: the hue slowly travels the whole colour wheel, like keyboard lighting.
+ * OKLCH keeps perceived brightness even across hues, so white text stays readable on
+ * every colour. steps() limits repaints (the glass panels use backdrop blur).
+ */
+[data-accent="rgb"] {
+  --rgb-duration: 15s;
+  --rgb-spread: 70;
+  --accent: oklch(0.64 0.19 var(--rgb-hue));
+  --accent-2: oklch(0.64 0.19 calc(var(--rgb-hue) + var(--rgb-spread)));
+  --accent-foreground: #ffffff;
+  --accent-glow: color-mix(in srgb, var(--accent) 22%, transparent);
+  --accent-2-glow: color-mix(in srgb, var(--accent-2) 18%, transparent);
+  animation: rgb-hue-cycle var(--rgb-duration) steps(300, end) infinite;
+}
+
+@keyframes rgb-hue-cycle {
+  from { --rgb-hue: 0; }
+  to { --rgb-hue: 360; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-accent="rgb"] { animation: none; }
+}
+
 body {
   background:
     radial-gradient(700px circle at 50% 0%, var(--accent-glow), transparent 70%),
+    radial-gradient(520px circle at 88% -8%, var(--accent-2-glow), transparent 70%),
     var(--background);
   background-repeat: no-repeat;
   background-attachment: fixed;
@@ -58,6 +96,16 @@ body {
 * {
   border-color: var(--border);
 }
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
+
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 
 /*
  * Tailwind v4 puts utilities (including responsive variants like lg:hidden)
@@ -96,7 +144,7 @@ body {
   padding: 0.75rem 1rem;
   height: 48px; /* Standardize height for touch targets */
   border-radius: 12px;
-  border: 1px solid transparent;
+  border: 1px solid var(--input-border);
   background: var(--input-bg);
   color: inherit;
   outline: none;
@@ -110,7 +158,7 @@ body {
 }
 
 .btn-primary {
-  background: var(--accent);
+  background: var(--accent-gradient);
   color: var(--accent-foreground);
   padding: 0.75rem 1.5rem;
   min-height: 48px; /* Standardize height for touch targets */
@@ -205,7 +253,7 @@ body {
 
 .sidebar-link.active {
   opacity: 1;
-  background: var(--accent);
+  background: var(--accent-gradient);
   color: var(--accent-foreground);
   box-shadow: 0 4px 12px var(--accent-glow);
 }

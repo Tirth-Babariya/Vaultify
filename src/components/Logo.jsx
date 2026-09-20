@@ -12,8 +12,8 @@ export default function Logo({ size = 24, className = "", animate = "" }) {
       fill="none" 
       xmlns="http://www.w3.org/2000/svg"
       className={`${className} transition-all duration-500 overflow-visible ${
-        isShake ? 'animate-shake-real text-red-500' : ''
-      } ${isUnlocked ? 'text-green-500 filter drop-shadow-[0_0_8px_rgba(34,197,94,0.4)]' : ''}`}
+        isShake ? 'animate-shake-real' : ''
+      } `}
     >
       <style>{`
         @keyframes shake-real {

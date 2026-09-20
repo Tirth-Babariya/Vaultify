@@ -2,29 +2,36 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { storage, session } from '@/lib/storage';
-import { encryptData, decryptData, hashPassword } from '@/lib/crypto';
+import { session } from '@/lib/storage';
+import { hashPassword } from '@/lib/crypto';
 import { playSound } from '@/lib/audio';
+import { isUnlocked, restoreSession, getVault, subscribeVault, mutate, lockVault } from '@/lib/vaultStore';
+import { initSync } from '@/lib/cloud';
+import { newId } from '@/lib/vaultData';
 import PasswordForm from '@/components/PasswordForm';
 import PasswordList from '@/components/PasswordList';
 import Generator from '@/components/Generator';
 import SecurityAudit from '@/components/SecurityAudit';
-import Settings from '@/components/Settings';
+import SettingsView from '@/components/SettingsView';
+import SyncBadge from '@/components/SyncBadge';
 import Groups from '@/components/Groups';
 import Sidebar from '@/components/Sidebar';
+import GitHubLink from '@/components/GitHubLink';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function Dashboard() {
   const router = useRouter();
   const searchRef = useRef(null);
   const formRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
-  const [passwords, setPasswords] = useState([]);
-  const [groups, setGroups] = useState([]);
+  const [vault, setVault] = useState({ entries: [], groups: [], tombstones: {} });
   const [unlockedGroupIds, setUnlockedGroupIds] = useState(() => new Set(session.get('unlocked_groups') || []));
   const [searchQuery, setSearchQuery] = useState('');
-  const [lastUnlocked, setLastUnlocked] = useState(null);
   const [toast, setToast] = useState(null);
   const [activeView, setActiveView] = useState('passwords'); // 'passwords', 'groups', 'generator', 'security', 'settings'
+
+  const passwords = vault.entries;
+  const groups = vault.groups;
 
   const showToast = (message) => {
     setToast(message);
@@ -32,62 +39,29 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const initVault = async () => {
-      const masterHash = storage.get('master_hash');
-      const isLocked = storage.get('is_locked');
-      const vaultKey = session.get('vault_key');
-      const unlockedTime = session.get('last_unlocked');
-
-      if (!masterHash || isLocked !== false || !vaultKey) {
+    let unsubscribe = () => {};
+    (async () => {
+      if (!isUnlocked() || !(await restoreSession())) {
         router.push('/lock');
         return;
       }
-
-      setLastUnlocked(unlockedTime);
-
-      const encryptedVault = storage.get('passwords');
-      if (encryptedVault) {
-        try {
-          if (Array.isArray(encryptedVault)) {
-            setPasswords(encryptedVault);
-            const cipherText = await encryptData(encryptedVault, vaultKey);
-            storage.set('passwords', cipherText);
-          } else {
-            const decrypted = await decryptData(encryptedVault, vaultKey);
-            setPasswords(decrypted);
-          }
-        } catch (error) {
-          console.error('Decryption failed', error);
-          router.push('/lock');
-          return;
-        }
-      }
-
-      const encryptedGroups = storage.get('groups');
-      if (encryptedGroups) {
-        try {
-          const decrypted = await decryptData(encryptedGroups, vaultKey);
-          setGroups(decrypted);
-        } catch (error) {
-          console.error('Group decryption failed', error);
-        }
-      }
-
+      setVault(getVault());
+      unsubscribe = subscribeVault(setVault);
+      initSync();
       setIsReady(true);
-    };
-
-    initVault();
+    })();
 
     let timeout;
     const resetTimer = () => {
       clearTimeout(timeout);
-      const prefs = storage.get('vault_settings') || {};
+      let prefs = {};
+      try { prefs = JSON.parse(localStorage.getItem('vault_settings') || '{}'); } catch { /* ignore */ }
       const timerMinutes = prefs.lockTimer || 10;
       timeout = setTimeout(() => handleLock(), timerMinutes * 60 * 1000);
     };
 
     const handleShortcuts = (e) => {
-      if (document.activeElement.tagName === 'INPUT' && e.key !== 'Escape') return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName) && e.key !== 'Escape') return;
 
       if (e.key === '/') {
         e.preventDefault();
@@ -106,66 +80,49 @@ export default function Dashboard() {
     resetTimer();
 
     return () => {
+      unsubscribe();
       clearTimeout(timeout);
       window.removeEventListener('mousemove', resetTimer);
       window.removeEventListener('keydown', resetTimer);
       window.removeEventListener('keydown', handleShortcuts);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
-  const saveVault = async (updatedPasswords) => {
-    const vaultKey = session.get('vault_key');
-    if (!vaultKey) return;
-    try {
-      const cipherText = await encryptData(updatedPasswords, vaultKey);
-      storage.set('passwords', cipherText);
-      setPasswords(updatedPasswords);
-    } catch (error) {
-      showToast('Error securing vault.');
-    }
-  };
-
   const addPassword = (newEntry) => {
-    const updated = [newEntry, ...passwords];
-    saveVault(updated);
+    mutate((v) => ({ ...v, entries: [{ ...newEntry, updatedAt: Date.now() }, ...v.entries] }));
     showToast('Password saved securely!');
   };
 
   const deletePassword = (id) => {
-    const updated = passwords.filter(p => p.id !== id);
-    saveVault(updated);
+    mutate((v) => ({
+      ...v,
+      entries: v.entries.filter((p) => p.id !== id),
+      tombstones: { ...v.tombstones, [`e:${id}`]: Date.now() },
+    }));
     showToast('Password deleted.');
   };
 
   const changeEntryGroup = (id, groupId) => {
-    const updated = passwords.map(p => p.id === id ? { ...p, groupId } : p);
-    saveVault(updated);
-  };
-
-  const saveGroups = async (updatedGroups) => {
-    const vaultKey = session.get('vault_key');
-    if (!vaultKey) return;
-    try {
-      const cipherText = await encryptData(updatedGroups, vaultKey);
-      storage.set('groups', cipherText);
-      setGroups(updatedGroups);
-    } catch (error) {
-      showToast('Error saving group.');
-    }
+    mutate((v) => ({ ...v, entries: v.entries.map((p) => (p.id === id ? { ...p, groupId, updatedAt: Date.now() } : p)) }));
   };
 
   const addGroup = async (name, passcode) => {
     const passcodeHash = passcode ? await hashPassword(passcode) : null;
-    const newGroup = { id: Date.now(), name, passcodeHash };
-    await saveGroups([...groups, newGroup]);
+    mutate((v) => ({ ...v, groups: [...v.groups, { id: newId(), name, passcodeHash, updatedAt: Date.now() }] }));
     showToast('Group created.');
   };
 
   const deleteGroup = (id) => {
-    saveGroups(groups.filter(g => g.id !== id));
-    // Entries in the deleted group fall back to Ungrouped rather than vanishing.
-    saveVault(passwords.map(p => p.groupId === id ? { ...p, groupId: null } : p));
-    setUnlockedGroupIds(prev => {
+    const now = Date.now();
+    mutate((v) => ({
+      ...v,
+      groups: v.groups.filter((g) => g.id !== id),
+      // Entries in the deleted group fall back to Ungrouped rather than vanishing.
+      entries: v.entries.map((p) => (p.groupId === id ? { ...p, groupId: null, updatedAt: now } : p)),
+      tombstones: { ...v.tombstones, [`g:${id}`]: now },
+    }));
+    setUnlockedGroupIds((prev) => {
       const next = new Set(prev);
       next.delete(id);
       session.set('unlocked_groups', [...next]);
@@ -176,16 +133,15 @@ export default function Dashboard() {
 
   const setGroupPasscode = async (id, passcode) => {
     const passcodeHash = passcode ? await hashPassword(passcode) : null;
-    await saveGroups(groups.map(g => g.id === id ? { ...g, passcodeHash } : g));
+    mutate((v) => ({ ...v, groups: v.groups.map((g) => (g.id === id ? { ...g, passcodeHash, updatedAt: Date.now() } : g)) }));
     showToast(passcode ? 'Passcode set for group.' : 'Passcode removed from group.');
   };
 
   const unlockGroup = async (id, passcode) => {
-    const group = groups.find(g => g.id === id);
+    const group = groups.find((g) => g.id === id);
     if (!group?.passcodeHash) return true;
-    const hash = await hashPassword(passcode);
-    if (hash !== group.passcodeHash) return false;
-    setUnlockedGroupIds(prev => {
+    if ((await hashPassword(passcode)) !== group.passcodeHash) return false;
+    setUnlockedGroupIds((prev) => {
       const next = new Set(prev).add(id);
       session.set('unlocked_groups', [...next]);
       return next;
@@ -197,7 +153,7 @@ export default function Dashboard() {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = async (event) => {
+    reader.onload = (event) => {
       try {
         const content = event.target.result;
         let imported = [];
@@ -205,24 +161,31 @@ export default function Dashboard() {
           const data = JSON.parse(content);
           imported = Array.isArray(data) ? data : (data.passwords || []);
         } else if (file.name.endsWith('.csv')) {
-          const rows = content.split('\n').filter(r => r.trim());
+          const rows = content.split('\n').filter((r) => r.trim());
           if (rows.length < 2) return;
-          const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
-          imported = rows.slice(1).map(row => {
-            const values = row.split(',').map(v => v.trim());
+          const headers = rows[0].split(',').map((h) => h.trim().toLowerCase());
+          imported = rows.slice(1).map((row) => {
+            const values = row.split(',').map((v) => v.trim());
             const entry = {};
             headers.forEach((h, i) => {
               if (h.includes('site') || h.includes('url') || h.includes('name')) entry.site = values[i];
               if (h.includes('user')) entry.username = values[i];
               if (h.includes('pass')) entry.password = values[i];
             });
-            entry.id = Date.now() + Math.round(Math.random() * 1000);
             return entry;
-          }).filter(e => e.site && e.password);
+          });
         }
+        imported = imported.filter((entry) => entry.site && entry.password);
         if (imported.length > 0) {
-          const merged = [...imported, ...passwords];
-          await saveVault(merged);
+          const now = Date.now();
+          const stamped = imported.map((entry, i) => ({
+            username: '',
+            ...entry,
+            id: newId() + i,
+            groupId: null,
+            updatedAt: now,
+          }));
+          mutate((v) => ({ ...v, entries: [...stamped, ...v.entries] }));
           showToast(`Imported ${imported.length} entries successfully!`);
         } else {
           showToast('No valid entries found in file.');
@@ -235,17 +198,15 @@ export default function Dashboard() {
     e.target.value = '';
   };
 
-  const handleLock = () => {
+  const handleLock = async () => {
     playSound('lock');
-    storage.set('is_locked', true);
-    session.remove('vault_key');
-    session.remove('unlocked_groups');
+    await lockVault();
     router.push('/lock');
   };
 
   const exportData = () => {
     const dataStr = JSON.stringify(passwords, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', 'vaultify-export.json');
@@ -257,7 +218,7 @@ export default function Dashboard() {
 
   const filteredPasswords = passwords.filter(p => 
     p.site.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.username.toLowerCase().includes(searchQuery.toLowerCase())
+    (p.username || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const renderView = () => {
@@ -268,7 +229,10 @@ export default function Dashboard() {
             <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-1">
               <div className="space-y-1">
                 <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Your Vault</h1>
-                <p className="text-foreground/50 text-sm">{passwords.length} items secured</p>
+                <div className="flex items-center gap-3">
+                  <p className="text-foreground/50 text-sm">{passwords.length} items secured</p>
+                  <SyncBadge className="lg:hidden" />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <label className="btn-secondary text-xs h-12 md:h-10 cursor-pointer">
@@ -370,11 +334,9 @@ export default function Dashboard() {
           <div className="page-transition max-w-2xl mx-auto space-y-8">
             <div className="space-y-1">
               <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Settings</h1>
-              <p className="text-foreground/50 text-sm">Personalize your vault experience.</p>
+              <p className="text-foreground/50 text-sm">Manage your account, security, appearance and preferences.</p>
             </div>
-            <div className="card glass p-8">
-              <Settings />
-            </div>
+            <SettingsView onSignedOut={() => router.push('/lock')} />
           </div>
         );
       default:
@@ -390,7 +352,11 @@ export default function Dashboard() {
         onLock={handleLock}
       />
 
-      <main className="min-h-screen pt-4 pb-32 lg:pb-12 px-4 lg:px-12 lg:ml-[var(--sidebar-w)] overflow-x-hidden">
+      <main className="relative min-h-screen pt-4 pb-32 lg:pb-12 px-4 lg:px-12 lg:ml-[var(--sidebar-w)] overflow-x-hidden">
+        <div className="absolute right-3 top-3 lg:right-8 lg:top-3 z-20 flex items-center gap-2">
+          <ThemeToggle />
+          <GitHubLink />
+        </div>
         <div className="max-w-6xl mx-auto mt-4 lg:mt-10">
           {renderView()}
         </div>

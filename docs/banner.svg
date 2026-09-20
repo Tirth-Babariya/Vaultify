@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="360" viewBox="0 0 1280 360" role="img" aria-label="Vaultify: a password manager that can't read your passwords">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#030303" />
+      <stop offset="1" stop-color="#061a12" />
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="0%" r="70%">
+      <stop offset="0" stop-color="#10b981" stop-opacity="0.35" />
+      <stop offset="1" stop-color="#10b981" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="badge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#34d399" />
+      <stop offset="1" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="title" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" />
+      <stop offset="1" stop-color="#a7f3d0" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="360" fill="url(#bg)" />
+  <rect width="1280" height="360" fill="url(#glow)" />
+
+  <g opacity="0.06" stroke="#ffffff" stroke-width="1">
+    <path d="M0 60H1280M0 120H1280M0 180H1280M0 240H1280M0 300H1280" />
+    <path d="M160 0V360M320 0V360M480 0V360M640 0V360M800 0V360M960 0V360M1120 0V360" />
+  </g>
+
+  <g transform="translate(640 96)">
+    <rect x="-44" y="-44" width="88" height="88" rx="24" fill="url(#badge)" />
+    <rect x="-44" y="-44" width="88" height="88" rx="24" fill="none" stroke="#ffffff" stroke-opacity="0.25" />
+    <g transform="translate(-26 -26) scale(2.166)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round">
+      <rect x="4" y="10" width="16" height="10" rx="2" />
+      <path d="M8 10V7C8 4.79 9.79 3 12 3C14.21 3 16 4.79 16 7V10" />
+      <circle cx="12" cy="15" r="1.5" fill="#ffffff" stroke="none" />
+      <path d="M12 16.5V18" />
+    </g>
+  </g>
+
+  <text x="640" y="212" text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="68" font-weight="800" letter-spacing="-2" fill="url(#title)">Vaultify</text>
+  <text x="640" y="262" text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="24" font-weight="500" fill="#ffffff" fill-opacity="0.72">A password manager that can’t read your passwords.</text>
+  <text x="640" y="305" text-anchor="middle" font-family="Inter, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" letter-spacing="3" fill="#34d399" fill-opacity="0.9">OPEN SOURCE  ·  END-TO-END ENCRYPTED  ·  LOCAL OR SYNCED</text>
+</svg>

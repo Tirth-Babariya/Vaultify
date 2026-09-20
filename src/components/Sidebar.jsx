@@ -1,11 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { session, storage } from '@/lib/storage';
+import { getMeta } from '@/lib/vaultStore';
+import { subscribeSyncStatus } from '@/lib/cloud';
 import Logo from './Logo';
+import SyncBadge from './SyncBadge';
 
 export default function Sidebar({ activeView, setActiveView, onLock }) {
+  const [, refresh] = useState(0);
+  useEffect(() => subscribeSyncStatus(() => refresh((n) => n + 1)), []);
+  const meta = getMeta();
+  const isCloud = meta?.mode === 'cloud';
+
   const views = [
     { id: 'passwords', label: 'Vault', icon: (
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
@@ -60,7 +66,20 @@ export default function Sidebar({ activeView, setActiveView, onLock }) {
           ))}
         </nav>
 
-        <div className="pt-6 border-t border-border">
+        <div className="pt-4 border-t border-border space-y-3">
+          <button
+            type="button"
+            onClick={() => setActiveView('settings')}
+            className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-border/60 bg-foreground/[0.03] hover:bg-foreground/[0.06] transition-colors text-left"
+          >
+            <div className="avatar-badge w-8 h-8 !rounded-full text-xs font-bold">
+              {(isCloud ? meta.email : 'L')[0].toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-semibold truncate">{isCloud ? meta.email : 'Local vault'}</div>
+              <SyncBadge />
+            </div>
+          </button>
           <button
             onClick={onLock}
             className="sidebar-link w-full text-red-500 hover:bg-red-500/10 hover:opacity-100"

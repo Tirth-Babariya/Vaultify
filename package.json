@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
     "next": "16.1.7",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -16,5 +17,22 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "tailwindcss": "^4"
-  }
+  },
+  "description": "Open-source, zero-knowledge password manager. Local-only or synced across devices, encrypted in your browser.",
+  "license": "MIT",
+  "author": "Tirth Babariya",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tirth-Babariya/Vaultify.git"
+  },
+  "homepage": "https://github.com/Tirth-Babariya/Vaultify#readme",
+  "keywords": [
+    "password-manager",
+    "zero-knowledge",
+    "end-to-end-encryption",
+    "nextjs",
+    "supabase",
+    "web-crypto",
+    "open-source"
+  ]
 }
