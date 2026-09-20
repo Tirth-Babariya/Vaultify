@@ -4,6 +4,7 @@
 
 <br />
 
+[![CI](https://github.com/Tirth-Babariya/Vaultify/actions/workflows/ci.yml/badge.svg)](https://github.com/Tirth-Babariya/Vaultify/actions/workflows/ci.yml)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)](https://react.dev)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
@@ -236,6 +237,17 @@ Found a vulnerability? Please read [SECURITY.md](SECURITY.md) and report it priv
 
 ---
 
+## Testing
+
+```bash
+npm test          # fast unit tests: crypto, key wrapping, recovery keys, merge logic (Node 20.19+)
+npm run test:e2e  # real-browser tests against a fake Supabase (run "npx playwright install chromium" once)
+```
+
+The end-to-end suite builds the app against a **mock backend**, so it never touches a real Supabase project. It covers sign-up with email confirmation, recovery, multi-device sync and conflict merging, offline edits, migration of old vaults, themes and settings tabs, and that every auth screen fits without scrolling. It also asserts that the server never receives a master password, recovery key or plaintext entry.
+
+Both run automatically on every push and pull request via [GitHub Actions](.github/workflows/ci.yml).
+
 ## Project structure
 
 ```text
@@ -255,6 +267,7 @@ src/
     ├── ocr.js               Screenshot → credentials (Tesseract.js, on-device)
     └── theme.js             Light / dark / system
 supabase/schema.sql          Tables + Row Level Security policies
+tests/                       Unit tests (crypto, merge) and Playwright end-to-end suites
 docs/                        Banner and screenshots
 ```
 
@@ -272,7 +285,7 @@ docs/                        Banner and screenshots
 - [ ] Passkey / WebAuthn unlock
 - [ ] Installable PWA
 - [ ] Browser extension for autofill
-- [ ] Automated end-to-end test suite
+- [x] Automated unit and end-to-end tests, run by GitHub Actions on every push
 - [ ] Independent security review
 
 Have an idea? [Open an issue](../../issues).
