@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { playSound } from '@/lib/audio';
-import { SITE_SUGGESTIONS } from '@/lib/siteSuggestions';
+import { suggestSites } from '@/lib/siteSuggestions';
 import GroupDropdown from './GroupDropdown';
 import { newId } from '@/lib/vaultData';
 
@@ -14,9 +14,7 @@ export default function PasswordForm({ onAdd, inputRef, groups = [] }) {
   const [showSiteSuggestions, setShowSiteSuggestions] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
 
-  const siteSuggestions = site.trim()
-    ? SITE_SUGGESTIONS.filter((s) => s.toLowerCase().includes(site.trim().toLowerCase()) && s.toLowerCase() !== site.trim().toLowerCase()).slice(0, 6)
-    : [];
+  const siteSuggestions = suggestSites(site);
 
   const selectSuggestion = (suggestion) => {
     setSite(suggestion);

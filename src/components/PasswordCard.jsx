@@ -37,9 +37,8 @@ export default function PasswordCard({ item, onDelete, isReused, groups = [], on
   // domains that don't really exist, which looks broken. Anything else
   // falls back to the app's own logo.
   const site = item.site.trim();
-  const domain = site.includes('.')
-    ? site.replace(/^https?:\/\//i, '').replace(/\/.*$/, '')
-    : SITE_DOMAINS[site.toLowerCase()];
+  const domain = SITE_DOMAINS[site.toLowerCase()]
+    ?? (site.includes('.') ? site.replace(/^https?:\/\//i, '').replace(/\/.*$/, '') : undefined);
 
   const getFavicon = (domain) => `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
 
