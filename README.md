@@ -119,7 +119,7 @@ No telemetry. No ads. No lock-in. Self-hostable end to end, MIT licensed.
 - **Password generator** using a cryptographically secure RNG.
 - **Security audit** that flags weak and reused passwords.
 - **Smart site suggestions** and favicons as you type.
-- **Import / export** (JSON, CSV), search, and keyboard shortcuts (`/` to search, `N` for a new entry).
+- **Password-gated, encrypted export.** Exporting asks for your master password every time, and the default backup is an AES-256-GCM encrypted `.vaultify` file. Import supports those plus JSON and CSV. Plus search and keyboard shortcuts (`/` to search, `N` for a new entry).
 - **Light, dark or system theme**, accent colours including **RGB Auto**, a lighting mode where the whole interface flows through the colour spectrum (speed and gradient width adjustable), mobile bottom navigation, and subtle mechanical sounds (optional).
 
 ---
@@ -226,7 +226,7 @@ A full database leak exposes only ciphertext.
 - **Group passcodes are a convenience lock in the UI**, not separate encryption. All groups share the vault key.
 - **Email account takeover** can’t reveal your data, but could let an attacker wipe your cloud copy. Keep a local export.
 - **Lose your master password *and* recovery key and the data is gone.** That’s the trade-off of zero-knowledge.
-- **Exports are plain JSON.** Store them carefully.
+- **Plain JSON export is still available** for moving to another app. It is unencrypted, so store it carefully and delete it afterwards. The default export is encrypted.
 
 ### Privacy notes
 
@@ -280,7 +280,7 @@ docs/                        Banner and screenshots
 - [ ] Built-in 2FA (TOTP) codes per entry
 - [ ] Secure notes, cards and identities
 - [ ] Breach check using k-anonymity (only a hash prefix leaves the device)
-- [ ] Encrypted export / import
+- [x] Encrypted export / import (master-password gated)
 - [ ] Import from other password managers
 - [ ] Passkey / WebAuthn unlock
 - [ ] Installable PWA

@@ -288,7 +288,7 @@ export default function HowItWorksPage() {
               <Card title="Screenshot import (OCR)">Text is read from your screenshot entirely inside your browser and the image is never uploaded. The first time you use it, the OCR engine downloads its language data from a public CDN.</Card>
               <Card title="Site icons">To show a site’s logo, Vaultify asks Google’s favicon service for the icon of well-known sites and domains you’ve typed. That request reveals the domain (never your username or password). Entries with unrecognised names show the Vaultify icon instead and make no request.</Card>
               <Card title="Local activity & settings">Theme, accent colour, sounds and the auto-lock timer are stored only in your browser.</Card>
-              <Card title="Exports">Exporting from the Vault page produces a plain JSON file of your entries. It isn’t encrypted, so keep it somewhere safe and delete it when you’re done.</Card>
+              <Card title="Exports">Exporting always asks for your master password again, even while the vault is unlocked. The default is an encrypted backup (a .vaultify file locked with that password). You can choose plain JSON to move to another app, but it is unencrypted, so keep it safe and delete it when you’re done.</Card>
             </div>
           </Section>
 

@@ -3,9 +3,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { session } from '@/lib/storage';
-import { hashPassword } from '@/lib/crypto';
+import { hashPassword, encryptBackup, decryptBackup, isBackupFile } from '@/lib/crypto';
 import { playSound } from '@/lib/audio';
-import { isUnlocked, restoreSession, getVault, subscribeVault, mutate, lockVault } from '@/lib/vaultStore';
+import { isUnlocked, restoreSession, getVault, subscribeVault, mutate, lockVault, verifyPassword } from '@/lib/vaultStore';
 import { initSync } from '@/lib/cloud';
 import { newId } from '@/lib/vaultData';
 import PasswordForm from '@/components/PasswordForm';
@@ -18,6 +18,7 @@ import Groups from '@/components/Groups';
 import Sidebar from '@/components/Sidebar';
 import GitHubLink from '@/components/GitHubLink';
 import ThemeToggle from '@/components/ThemeToggle';
+import PasswordPrompt from '@/components/PasswordPrompt';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -29,6 +30,8 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [toast, setToast] = useState(null);
   const [activeView, setActiveView] = useState('passwords'); // 'passwords', 'groups', 'generator', 'security', 'settings'
+  const [prompt, setPrompt] = useState(null); // { type: 'export' } | { type: 'import', content }
+  const [exportFormat, setExportFormat] = useState('encrypted');
 
   const passwords = vault.entries;
   const groups = vault.groups;
@@ -149,6 +152,24 @@ export default function Dashboard() {
     return true;
   };
 
+  const addImported = (imported) => {
+    imported = imported.filter((entry) => entry && entry.site && entry.password);
+    if (imported.length > 0) {
+      const now = Date.now();
+      const stamped = imported.map((entry, i) => ({
+        username: '',
+        ...entry,
+        id: newId() + i,
+        groupId: null,
+        updatedAt: now,
+      }));
+      mutate((v) => ({ ...v, entries: [...stamped, ...v.entries] }));
+      showToast(`Imported ${imported.length} entries successfully!`);
+    } else {
+      showToast('No valid entries found in file.');
+    }
+  };
+
   const importData = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -156,6 +177,10 @@ export default function Dashboard() {
     reader.onload = (event) => {
       try {
         const content = event.target.result;
+        if (isBackupFile(content)) {
+          setPrompt({ type: 'import', content });
+          return;
+        }
         let imported = [];
         if (file.name.endsWith('.json')) {
           const data = JSON.parse(content);
@@ -175,21 +200,7 @@ export default function Dashboard() {
             return entry;
           });
         }
-        imported = imported.filter((entry) => entry.site && entry.password);
-        if (imported.length > 0) {
-          const now = Date.now();
-          const stamped = imported.map((entry, i) => ({
-            username: '',
-            ...entry,
-            id: newId() + i,
-            groupId: null,
-            updatedAt: now,
-          }));
-          mutate((v) => ({ ...v, entries: [...stamped, ...v.entries] }));
-          showToast(`Imported ${imported.length} entries successfully!`);
-        } else {
-          showToast('No valid entries found in file.');
-        }
+        addImported(imported);
       } catch (error) {
         showToast('Import failed. Check file format.');
       }
@@ -198,20 +209,45 @@ export default function Dashboard() {
     e.target.value = '';
   };
 
+  const submitImportPassword = async (password) => {
+    let data;
+    try {
+      data = await decryptBackup(prompt.content, password);
+    } catch {
+      throw new Error('Wrong password, or the backup file is damaged.');
+    }
+    setPrompt(null);
+    addImported(Array.isArray(data) ? data : (data.passwords || []));
+  };
+
   const handleLock = async () => {
     playSound('lock');
     await lockVault();
     router.push('/lock');
   };
 
-  const exportData = () => {
-    const dataStr = JSON.stringify(passwords, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', 'vaultify-export.json');
-    linkElement.click();
-    showToast('Vault exported as JSON');
+  const download = (text, filename, type) => {
+    const url = URL.createObjectURL(new Blob([text], { type }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  // Exporting needs the master password every time, even on an unlocked vault, so a
+  // borrowed or left-open session can't quietly dump everything.
+  const submitExportPassword = async (password) => {
+    await verifyPassword(password);
+    const date = new Date().toISOString().slice(0, 10);
+    if (exportFormat === 'encrypted') {
+      download(await encryptBackup({ passwords: getVault().entries }, password), `vaultify-backup-${date}.vaultify`, 'application/json');
+      showToast('Encrypted backup downloaded');
+    } else {
+      download(JSON.stringify(getVault().entries, null, 2), `vaultify-export-${date}.json`, 'application/json');
+      showToast('Plain JSON exported. Keep it safe!');
+    }
+    setPrompt(null);
   };
 
   if (!isReady) return null;
@@ -240,9 +276,9 @@ export default function Dashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                   </svg>
                   Import
-                  <input type="file" accept=".json,.csv" className="hidden" onChange={importData} />
+                  <input type="file" accept=".json,.csv,.vaultify" className="hidden" onChange={importData} />
                 </label>
-                <button onClick={exportData} className="btn-secondary text-xs h-12 md:h-10">
+                <button onClick={() => { setExportFormat('encrypted'); setPrompt({ type: 'export' }); }} className="btn-secondary text-xs h-12 md:h-10">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 mr-2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                   </svg>
@@ -361,6 +397,42 @@ export default function Dashboard() {
           {renderView()}
         </div>
       </main>
+
+      {prompt?.type === 'export' && (
+        <PasswordPrompt
+          title="Export your vault"
+          description="Enter your master password to continue. Vaultify asks every time, even while unlocked."
+          submitLabel="Export"
+          onSubmit={submitExportPassword}
+          onClose={() => setPrompt(null)}
+        >
+          <div className="space-y-2" role="radiogroup" aria-label="Export format">
+            {[
+              ['encrypted', 'Encrypted backup', 'Recommended. Locked with your master password, so the file is useless to anyone without it.'],
+              ['plain', 'Plain JSON', 'Every password readable by anyone who opens the file. Only for moving to another app.'],
+            ].map(([value, name, note]) => (
+              <label key={value} className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition-colors ${exportFormat === value ? 'border-[var(--accent)] bg-foreground/[0.04]' : 'border-border'}`}>
+                <input type="radio" name="export-format" value={value} checked={exportFormat === value} onChange={() => setExportFormat(value)} className="mt-1 accent-[var(--accent)]" />
+                <span className="space-y-0.5">
+                  <span className="block text-sm font-medium">{name}</span>
+                  <span className="block text-xs opacity-60 leading-relaxed">{note}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </PasswordPrompt>
+      )}
+
+      {prompt?.type === 'import' && (
+        <PasswordPrompt
+          title="Unlock this backup"
+          description="This is an encrypted Vaultify backup. Enter the master password it was exported with."
+          label="Backup password"
+          submitLabel="Import"
+          onSubmit={submitImportPassword}
+          onClose={() => setPrompt(null)}
+        />
+      )}
 
       {toast && (
         <div className="fixed bottom-20 lg:bottom-10 left-1/2 -translate-x-1/2 z-[60] animate-in fade-in slide-in-from-bottom-4 duration-300 w-[90%] max-w-xs">

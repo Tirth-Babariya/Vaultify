@@ -138,6 +138,56 @@ export async function decryptJson(payload, dek) {
   return JSON.parse(dec.decode(plain));
 }
 
+// ---- encrypted backup file -------------------------------------------------
+
+// A self-contained file: its own random salt, so it can be restored on any device
+// or vault with nothing but the password it was exported with.
+const backupKey = async (password, salt, iterations, usage) => {
+  const base = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+    base,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    [usage]
+  );
+};
+
+export async function encryptBackup(data, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await backupKey(password, salt, PBKDF2_ITERATIONS, 'encrypt');
+  const cipher = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(JSON.stringify(data)));
+  return JSON.stringify({
+    format: 'vaultify-backup',
+    version: 1,
+    kdf: 'PBKDF2-SHA256',
+    iterations: PBKDF2_ITERATIONS,
+    salt: toB64(salt),
+    iv: toB64(iv),
+    data: toB64(new Uint8Array(cipher)),
+  });
+}
+
+export const isBackupFile = (text) => {
+  try {
+    return JSON.parse(text)?.format === 'vaultify-backup';
+  } catch {
+    return false;
+  }
+};
+
+// Throws if the password is wrong or the file was tampered with.
+export async function decryptBackup(text, password) {
+  const file = JSON.parse(text);
+  if (file?.format !== 'vaultify-backup' || file.version !== 1) throw new Error('Not a Vaultify backup');
+  const iterations = Number(file.iterations);
+  if (!Number.isInteger(iterations) || iterations < 100000 || iterations > 5000000) throw new Error('Unsupported backup');
+  const key = await backupKey(password, fromB64(file.salt), iterations, 'decrypt');
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(file.iv) }, key, fromB64(file.data));
+  return JSON.parse(dec.decode(plain));
+}
+
 // ---- recovery key ----------------------------------------------------------
 
 const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';

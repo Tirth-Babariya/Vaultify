@@ -97,3 +97,30 @@ test('legacy (v1) helpers still read vaults written by the old app', async () =>
   assert.deepEqual(await C.decryptLegacy(C.toB64(blob), 'old-master'), [{ id: 1, site: 'Old' }]);
   await assert.rejects(C.decryptLegacy(C.toB64(blob), 'wrong-master'));
 });
+
+test('encrypted backup round-trips with the right password only', async () => {
+  const data = { passwords: [{ id: '1', site: 'GitHub', username: 'me', password: 'hunter2-Ünïcode' }] };
+  const file = await C.encryptBackup(data, 'correct horse');
+  assert.ok(C.isBackupFile(file));
+  assert.deepEqual(await C.decryptBackup(file, 'correct horse'), data);
+  await assert.rejects(() => C.decryptBackup(file, 'wrong horse'));
+});
+
+test('encrypted backup never contains the plaintext and is salted per export', async () => {
+  const data = { passwords: [{ site: 'Bank', password: 'S3cret-Value-42' }] };
+  const a = await C.encryptBackup(data, 'pw');
+  const b = await C.encryptBackup(data, 'pw');
+  assert.ok(!a.includes('S3cret-Value-42') && !a.includes('Bank'));
+  assert.notEqual(JSON.parse(a).salt, JSON.parse(b).salt);
+  assert.notEqual(JSON.parse(a).data, JSON.parse(b).data);
+});
+
+test('tampered or foreign backup files are rejected', async () => {
+  const file = JSON.parse(await C.encryptBackup({ passwords: [] }, 'pw'));
+  const flipped = { ...file, data: file.data.slice(0, -4) + (file.data.endsWith('AAAA') ? 'BBBB' : 'AAAA') };
+  await assert.rejects(() => C.decryptBackup(JSON.stringify(flipped), 'pw'));
+  await assert.rejects(() => C.decryptBackup(JSON.stringify({ ...file, iterations: 1 }), 'pw'));
+  await assert.rejects(() => C.decryptBackup(JSON.stringify([{ site: 'x' }]), 'pw'));
+  assert.equal(C.isBackupFile('[{"site":"x"}]'), false);
+  assert.equal(C.isBackupFile('not json'), false);
+});

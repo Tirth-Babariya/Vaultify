@@ -18,7 +18,7 @@ const ROOT = path.resolve(__dirname, '../..');
 const PORT = process.env.E2E_PORT || '3100';
 const BASE_URL = `http://localhost:${PORT}`;
 const RESULTS = path.join(ROOT, 'test-results');
-const ALL = ['local', 'theme-tabs', 'fit', 'cloud'];
+const ALL = ['local', 'theme-tabs', 'fit', 'cloud', 'export'];
 const suites = process.env.E2E_ONLY ? process.env.E2E_ONLY.split(',').map((s) => s.trim()) : ALL;
 
 // Process env wins over .env.local, so a developer's real keys are never used.
